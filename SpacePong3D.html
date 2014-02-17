@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<title>SpacePong3D</title>
+</head>
+
+<body>
+	<div id="help" style="position:fixed; left:48%; top:4%; color:white;">
+		SpacePong3D
+	</div>
+
+	<div id="help1" style="position:fixed; left:40%; bottom:8%; color:grey;">
+		Desktop: Press W A S D keys, or Click/Drag Mouse to move
+	</div>
+
+	<div id="help2" style="position:fixed; left:40%; bottom:4%; color:grey;">
+		Mobile: Hold finger down and slow Swipe to move
+	</div>
+
+	<div id="debug1" style="position:fixed; left:5%; top:4%; color:grey;">
+		Debug Info
+	</div>
+
+	<div id="debug2" style="position:fixed; left:5%; top:8%; color:grey;">
+		Debug Info
+	</div>
+
+	<div id="debug3" style="position:fixed; left:5%; top:12%; color:grey;">
+		Debug Info
+	</div>
+
+	<div id="debug4" style="position:fixed; left:5%; top:16%; color:grey;">
+		Debug Info
+	</div>
+
+	<script src="http://threejs.org/build/three.min.js"></script>
+	<script src="js/threex.keyboardstate.js"></script>
+	<script src="js/virtualjoystick.js"></script>
+	<script src="js/threex.GameTimer.js"></script>
+	<script>
+		var scene = new THREE.Scene();
+		var camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 2000);
+		var clock = new THREE.Clock();
+		var timer = new THREEx.GameTimer(7);
+
+		var keyboard = new THREEx.KeyboardState();
+		var joystick = new VirtualJoystick({
+			mouseSupport: true, // ,
+			hideJoystick: true // ,
+			//stationaryBase: true,
+			//baseX: 400,
+			//baseY: 200,
+			//limitStickTravel: true,
+			//stickRadius: 100
+		});
+
+		var renderer = new THREE.WebGLRenderer();
+		renderer.setClearColor('rgb(0,0,0)', 1);
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		document.body.appendChild(renderer.domElement);
+		window.addEventListener('resize', onWindowResize, false);
+
+		var gameReset = true;
+		var frameTime = 0;
+
+		var ballSpeed = 0;
+		var ballDirection = new THREE.Vector3(0, 0, 0);
+		var ballRadius = 3;
+		var paddleWidth = 20;
+		var paddleHeight = 14;
+		var paddleDepth = 4;
+		var oldBluePaddleX = 0;
+		var oldBluePaddleY = 0;
+		var halfPaddleWidth = paddleWidth / 2;
+		var halfPaddleHeight = paddleHeight / 2;
+		var arenaWidth = 100; //100
+		var arenaHeight = 60; //60
+		var arenaDepth = 200; //200
+		var halfArenaWidth = arenaWidth / 2;
+		var halfArenaHeight = arenaHeight / 2;
+		var halfArenaDepth = arenaDepth / 2;
+		var rightWall = (arenaWidth / 2) - halfPaddleWidth;
+		var leftWall = (-arenaWidth / 2) + halfPaddleWidth;
+		var topWall = (arenaHeight / 2) - halfPaddleHeight;
+		var bottomWall = (-arenaHeight / 2) + halfPaddleHeight;
+		var collisionResult = false;
+		var bluePaddleMissed = false;
+		var redPaddleMissed = false;
+		/*
+		var arenaGeometry = new THREE.CubeGeometry(arenaWidth, arenaHeight, arenaDepth);
+		var arenaMaterial = new THREE.MeshBasicMaterial({
+			color: 'rgb(0,0,0)',
+			transparent: true,
+			opacity: 0
+		});
+		var arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
+		scene.add(arena);
+*/
+		var backTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth));
+		var backTriangleNormal = backTriangle.normal();
+		var frontTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
+		var frontTriangleNormal = frontTriangle.normal();
+		var rightTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth));
+		var rightTriangleNormal = rightTriangle.normal();
+		var leftTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
+		var leftTriangleNormal = leftTriangle.normal();
+		var topTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
+		var topTriangleNormal = topTriangle.normal();
+		var bottomTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth));
+		var bottomTriangleNormal = bottomTriangle.normal();
+
+		var lineGeometry = new THREE.Geometry();
+		var vertArray = lineGeometry.vertices;
+		vertArray.push(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth),
+			new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth),
+			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth),
+			new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth),
+
+			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth),
+
+			new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth)
+		);
+		lineGeometry.computeLineDistances();
+		var lineMaterial = new THREE.LineBasicMaterial({
+			color: 'rgb(0,255,0)'
+		});
+		var line = new THREE.Line(lineGeometry, lineMaterial, THREE.LinePieces);
+		scene.add(line);
+
+		 //blue paddle
+		var cubeGeometry = new THREE.CubeGeometry(paddleWidth, paddleHeight, paddleDepth);
+		var cubeMaterial = new THREE.MeshBasicMaterial({
+			color: 'rgb(0,0,255)',
+			transparent: true,
+			opacity: 0.5 //0.4
+		});
+		var bluePaddle = new THREE.Mesh(cubeGeometry, cubeMaterial);
+		scene.add(bluePaddle);
+
+		 //red paddle
+		var cubeGeometry = new THREE.CubeGeometry(paddleWidth, paddleHeight, paddleDepth);
+		var cubeMaterial = new THREE.MeshBasicMaterial({
+			color: 'rgb(255,0,0)',
+			transparent: true,
+			opacity: 1.0 //0.4
+		});
+		var redPaddle = new THREE.Mesh(cubeGeometry, cubeMaterial);
+		scene.add(redPaddle);
+
+		 //sun light
+		var sphereGeometry = new THREE.SphereGeometry(50);
+		var sphereMaterial = new THREE.MeshBasicMaterial({
+			color: 'rgb(255,255,0)'
+		});
+		var sunSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+		scene.add(sunSphere);
+
+		 //ball
+		var sphereGeometry = new THREE.SphereGeometry(ballRadius);
+		var sphereMaterial = new THREE.MeshLambertMaterial({
+			color: 'rgb(255,255,255)'
+		});
+		var ball = new THREE.Mesh(sphereGeometry, sphereMaterial);
+		scene.add(ball);
+
+		var light = new THREE.PointLight('rgb(255,255,255)', 1, 0);
+		scene.add(light);
+
+		light.position.set(1000, 500, -300);
+		sunSphere.position.copy(light.position);
+		 //camera.position.y = 40;
+		camera.position.z = 160;
+
+		bluePaddle.position.x = 0.0;
+		bluePaddle.position.y = 0.0;
+		bluePaddle.position.z = arenaDepth / 2 + paddleDepth;
+
+		redPaddle.position.x = 0.0;
+		redPaddle.position.y = 0.0;
+		redPaddle.position.z = -arenaDepth / 2 - paddleDepth;
+
+		var debugText1 = document.getElementById("debug1");
+		var debugText2 = document.getElementById("debug2");
+		var debugText3 = document.getElementById("debug3");
+		var debugText4 = document.getElementById("debug4");
+
+		animate();
+
+
+		function animate() {
+
+			requestAnimationFrame(animate);
+
+			frameTime = clock.getDelta();                 
+			timer.run(frameTime);
+
+			if (gameReset === true) {
+				ball.position.x = bluePaddle.position.x;
+				ball.position.y = bluePaddle.position.y;
+				ball.position.z = bluePaddle.position.z - ballRadius;
+
+				ballSpeed = 60;
+				ballDirection.x = 0.5;
+				ballDirection.y = 0.5;
+				ballDirection.z = -1;
+				ballDirection.normalize();
+
+				bluePaddleMissed = false;
+				redPaddleMissed = false;
+
+				gameReset = false;
+			}
+
+			if (keyboard.pressed("D")) {
+				bluePaddle.position.x += 60 * frameTime;
+			}
+			if (keyboard.pressed("A")) {
+				bluePaddle.position.x -= 60 * frameTime;
+			}
+			if (keyboard.pressed("W")) {
+				bluePaddle.position.y += 60 * frameTime;
+			}
+			if (keyboard.pressed("S")) {
+				bluePaddle.position.y -= 60 * frameTime;
+			}
+			//joystick._pressed = true;
+			if (joystick) {
+				if (joystick._pressed === true) {
+					bluePaddle.position.x = oldBluePaddleX + (joystick.deltaX() / 2.5);
+					bluePaddle.position.y = oldBluePaddleY - (joystick.deltaY() / 2.5);
+				} else {
+					oldBluePaddleX = bluePaddle.position.x;
+					oldBluePaddleY = bluePaddle.position.y;
+				}
+			}
+			if (bluePaddle.position.x > rightWall)
+				bluePaddle.position.x = rightWall;
+			if (bluePaddle.position.x < leftWall)
+				bluePaddle.position.x = leftWall;
+			if (bluePaddle.position.y > topWall)
+				bluePaddle.position.y = topWall;
+			if (bluePaddle.position.y < bottomWall)
+				bluePaddle.position.y = bottomWall;
+
+
+			ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
+
+			if (bluePaddleMissed == false && redPaddleMissed == false) {
+				//back wall
+				if ((ball.position.z - ballRadius) < redPaddle.position.z) {
+					ball.position.z = redPaddle.position.z + ballRadius;
+					ballDirection.reflect(backTriangleNormal);
+					ballDirection.normalize();
+				}
+				//front wall
+				if ((ball.position.z + ballRadius) > bluePaddle.position.z) {
+					ball.position.z = bluePaddle.position.z - ballRadius;
+
+					collisionResult = checkBallPaddleCollision(ball.position, bluePaddle.position);
+					if (collisionResult === true) {
+						ballDirection.reflect(frontTriangleNormal);
+						ballDirection.normalize();
+					} else {
+						handleMiss(bluePaddle);
+					}
+				}
+				//left wall
+				if ((ball.position.x - ballRadius) < -halfArenaWidth) {
+					ball.position.x = -halfArenaWidth + ballRadius;
+					ballDirection.reflect(leftTriangleNormal);
+					ballDirection.normalize();
+				}
+				//right wall
+				if ((ball.position.x + ballRadius) > halfArenaWidth) {
+					ball.position.x = halfArenaWidth - ballRadius;
+					ballDirection.reflect(rightTriangleNormal);
+					ballDirection.normalize();
+				}
+				//bottom wall
+				if ((ball.position.y - ballRadius) < -halfArenaHeight) {
+					ball.position.y = -halfArenaHeight + ballRadius;
+					ballDirection.reflect(bottomTriangleNormal);
+					ballDirection.normalize();
+				}
+				//top wall
+				if ((ball.position.y + ballRadius) > halfArenaHeight) {
+					ball.position.y = halfArenaHeight - ballRadius;
+					ballDirection.reflect(topTriangleNormal);
+					ballDirection.normalize();
+				}
+			} //end if bluePaddleMissed == false && redPaddleMissed == false
+
+
+			camera.lookAt(bluePaddle.position);
+
+			renderer.render(scene, camera);
+
+			//debugText1.innerHTML = "Ball Dir X: " + ballDirection.x.toFixed(1) +
+			//"Ball Dir Y: " + ballDirection.y.toFixed(1) +
+			//"Ball Dir Z: " + ballDirection.z.toFixed(1);
+			debugText1.innerHTML = "timer Alarm: " + timer.alarmSounding;
+			debugText2.innerHTML = "timer: " + timer.counter.toFixed(1);
+			debugText3.innerHTML = "bluePaddleMissed: " + bluePaddleMissed;
+			debugText4.innerHTML = "collisionResult: " + collisionResult;
+
+		}
+
+		function checkBallPaddleCollision(ballPos, paddlePos) {
+			if (ballPos.x > paddlePos.x - halfPaddleWidth &&
+			    ballPos.x < paddlePos.x + halfPaddleWidth &&
+			    ballPos.y > paddlePos.y - halfPaddleHeight &&
+			    ballPos.y < paddlePos.y + halfPaddleHeight)
+				return true;
+			else {
+				return false;
+			}
+		}
+
+		function handleMiss(paddle) {
+			bluePaddleMissed = true;
+		}
+
+		function onWindowResize() {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		}
+	</script>
+
+</body>
+
+</html>
