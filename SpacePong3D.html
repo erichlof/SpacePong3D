@@ -48,13 +48,8 @@
 
 		var keyboard = new THREEx.KeyboardState();
 		var joystick = new VirtualJoystick({
-			mouseSupport: true, // ,
-			hideJoystick: true // ,
-			//stationaryBase: true,
-			//baseX: 400,
-			//baseY: 200,
-			//limitStickTravel: true,
-			//stickRadius: 100
+			mouseSupport: true, 
+			hideJoystick: true 
 		});
 
 		var renderer = new THREE.WebGLRenderer();
@@ -89,7 +84,7 @@
 		var collisionResult = false;
 		var bluePaddleMissed = false;
 		var redPaddleMissed = false;
-		/*
+	     /*
 		var arenaGeometry = new THREE.CubeGeometry(arenaWidth, arenaHeight, arenaDepth);
 		var arenaMaterial = new THREE.MeshBasicMaterial({
 			color: 'rgb(0,0,0)',
@@ -98,7 +93,7 @@
 		});
 		var arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
 		scene.add(arena);
-*/
+             */
 		var backTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth));
 		var backTriangleNormal = backTriangle.normal();
 		var frontTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
@@ -200,7 +195,7 @@
 
 			requestAnimationFrame(animate);
 
-			frameTime = clock.getDelta();                 
+			frameTime = clock.getDelta();
 			timer.run(frameTime);
 
 			if (gameReset === true) {
@@ -232,7 +227,7 @@
 			if (keyboard.pressed("S")) {
 				bluePaddle.position.y -= 60 * frameTime;
 			}
-			//joystick._pressed = true;
+			
 			if (joystick) {
 				if (joystick._pressed === true) {
 					bluePaddle.position.x = oldBluePaddleX + (joystick.deltaX() / 2.5);
@@ -304,9 +299,6 @@
 
 			renderer.render(scene, camera);
 
-			//debugText1.innerHTML = "Ball Dir X: " + ballDirection.x.toFixed(1) +
-			//"Ball Dir Y: " + ballDirection.y.toFixed(1) +
-			//"Ball Dir Z: " + ballDirection.z.toFixed(1);
 			debugText1.innerHTML = "timer Alarm: " + timer.alarmSounding;
 			debugText2.innerHTML = "timer: " + timer.counter.toFixed(1);
 			debugText3.innerHTML = "bluePaddleMissed: " + bluePaddleMissed;
