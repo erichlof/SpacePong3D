@@ -48,8 +48,13 @@
 
 		var keyboard = new THREEx.KeyboardState();
 		var joystick = new VirtualJoystick({
-			mouseSupport: true, 
-			hideJoystick: true 
+			mouseSupport: true, // ,
+			hideJoystick: true // ,
+			//stationaryBase: true,
+			//baseX: 400,
+			//baseY: 200,
+			//limitStickTravel: true,
+			//stickRadius: 100
 		});
 
 		var renderer = new THREE.WebGLRenderer();
@@ -84,8 +89,8 @@
 		var collisionResult = false;
 		var bluePaddleMissed = false;
 		var redPaddleMissed = false;
-	     /*
-		var arenaGeometry = new THREE.CubeGeometry(arenaWidth, arenaHeight, arenaDepth);
+		/*
+		var arenaGeometry = new THREE.BoxGeometry(arenaWidth, arenaHeight, arenaDepth);
 		var arenaMaterial = new THREE.MeshBasicMaterial({
 			color: 'rgb(0,0,0)',
 			transparent: true,
@@ -93,7 +98,7 @@
 		});
 		var arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
 		scene.add(arena);
-             */
+*/
 		var backTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth));
 		var backTriangleNormal = backTriangle.normal();
 		var frontTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
@@ -132,23 +137,23 @@
 		scene.add(line);
 
 		 //blue paddle
-		var cubeGeometry = new THREE.CubeGeometry(paddleWidth, paddleHeight, paddleDepth);
-		var cubeMaterial = new THREE.MeshBasicMaterial({
+		var boxGeometry = new THREE.BoxGeometry(paddleWidth, paddleHeight, paddleDepth);
+		var boxMaterial = new THREE.MeshBasicMaterial({
 			color: 'rgb(0,0,255)',
 			transparent: true,
 			opacity: 0.5 //0.4
 		});
-		var bluePaddle = new THREE.Mesh(cubeGeometry, cubeMaterial);
+		var bluePaddle = new THREE.Mesh(boxGeometry, boxMaterial);
 		scene.add(bluePaddle);
 
 		 //red paddle
-		var cubeGeometry = new THREE.CubeGeometry(paddleWidth, paddleHeight, paddleDepth);
-		var cubeMaterial = new THREE.MeshBasicMaterial({
+		var boxGeometry = new THREE.BoxGeometry(paddleWidth, paddleHeight, paddleDepth);
+		var boxMaterial = new THREE.MeshBasicMaterial({
 			color: 'rgb(255,0,0)',
 			transparent: true,
 			opacity: 1.0 //0.4
 		});
-		var redPaddle = new THREE.Mesh(cubeGeometry, cubeMaterial);
+		var redPaddle = new THREE.Mesh(boxGeometry, boxMaterial);
 		scene.add(redPaddle);
 
 		 //sun light
@@ -195,7 +200,7 @@
 
 			requestAnimationFrame(animate);
 
-			frameTime = clock.getDelta();
+			frameTime = clock.getDelta();                 
 			timer.run(frameTime);
 
 			if (gameReset === true) {
@@ -227,11 +232,11 @@
 			if (keyboard.pressed("S")) {
 				bluePaddle.position.y -= 60 * frameTime;
 			}
-			
+			//joystick._pressed = true;
 			if (joystick) {
 				if (joystick._pressed === true) {
-					bluePaddle.position.x = oldBluePaddleX + (joystick.deltaX() / 2.5);
-					bluePaddle.position.y = oldBluePaddleY - (joystick.deltaY() / 2.5);
+					bluePaddle.position.x = oldBluePaddleX + (joystick.deltaX() / 4);
+					bluePaddle.position.y = oldBluePaddleY - (joystick.deltaY() / 4);
 				} else {
 					oldBluePaddleX = bluePaddle.position.x;
 					oldBluePaddleY = bluePaddle.position.y;
@@ -299,6 +304,9 @@
 
 			renderer.render(scene, camera);
 
+			//debugText1.innerHTML = "Ball Dir X: " + ballDirection.x.toFixed(1) +
+			//"Ball Dir Y: " + ballDirection.y.toFixed(1) +
+			//"Ball Dir Z: " + ballDirection.z.toFixed(1);
 			debugText1.innerHTML = "timer Alarm: " + timer.alarmSounding;
 			debugText2.innerHTML = "timer: " + timer.counter.toFixed(1);
 			debugText3.innerHTML = "bluePaddleMissed: " + bluePaddleMissed;
