@@ -141,7 +141,7 @@
 		var boxMaterial = new THREE.MeshBasicMaterial({
 			color: 'rgb(0,0,255)',
 			transparent: true,
-			opacity: 0.5 //0.4
+			opacity: 0.5 
 		});
 		var bluePaddle = new THREE.Mesh(boxGeometry, boxMaterial);
 		scene.add(bluePaddle);
@@ -151,7 +151,7 @@
 		var boxMaterial = new THREE.MeshBasicMaterial({
 			color: 'rgb(255,0,0)',
 			transparent: true,
-			opacity: 1.0 //0.4
+			opacity: 0.5 
 		});
 		var redPaddle = new THREE.Mesh(boxGeometry, boxMaterial);
 		scene.add(redPaddle);
@@ -166,18 +166,44 @@
 
 		 //ball
 		var sphereGeometry = new THREE.SphereGeometry(ballRadius);
-		var sphereMaterial = new THREE.MeshLambertMaterial({
-			color: 'rgb(255,255,255)'
+		var sphereMaterial = new THREE.MeshBasicMaterial({
+			color: 'rgb(255,255,255)',
+			transparent: true,
+			opacity: 0.7 
 		});
 		var ball = new THREE.Mesh(sphereGeometry, sphereMaterial);
 		scene.add(ball);
 
+		 // Circle
+		var circleRadius = ballRadius;
+		var circleShape = new THREE.Shape();
+		circleShape.moveTo(0, circleRadius);
+		circleShape.quadraticCurveTo(circleRadius, circleRadius, circleRadius, 0);
+		circleShape.quadraticCurveTo(circleRadius, -circleRadius, 0, -circleRadius);
+		circleShape.quadraticCurveTo(-circleRadius, -circleRadius, -circleRadius, 0);
+		circleShape.quadraticCurveTo(-circleRadius, circleRadius, 0, circleRadius);
+
+		var discGeometry = new THREE.ShapeGeometry(circleShape);
+		var discMaterial = new THREE.MeshBasicMaterial({
+			color: 'rgb(100,100,100)' // ,
+			//transparent: true,
+			//opacity: 0.5 //0.4
+		});
+		var disc1 = new THREE.Mesh(discGeometry, discMaterial);
+		scene.add(disc1);
+		var disc2 = new THREE.Mesh(discGeometry, discMaterial);
+		scene.add(disc2);
+		var disc3 = new THREE.Mesh(discGeometry, discMaterial);
+		scene.add(disc3);
+		var disc4 = new THREE.Mesh(discGeometry, discMaterial);
+		scene.add(disc4);
+
+
 		var light = new THREE.PointLight('rgb(255,255,255)', 1, 0);
 		scene.add(light);
-
-		light.position.set(1000, 500, -300);
+		light.position.set(1000, 500, -300);         
 		sunSphere.position.copy(light.position);
-		 //camera.position.y = 40;
+		 
 		camera.position.z = 160;
 
 		bluePaddle.position.x = 0.0;
@@ -187,6 +213,16 @@
 		redPaddle.position.x = 0.0;
 		redPaddle.position.y = 0.0;
 		redPaddle.position.z = -arenaDepth / 2 - paddleDepth;
+		
+		
+		disc1.position.set(halfArenaWidth, 0, 0);
+		disc1.rotation.set(0, Math.PI / -2, 0);
+		disc2.position.set(-halfArenaWidth, 0, 0);
+		disc2.rotation.set(0, Math.PI / 2, 0);
+		disc3.position.set(0, halfArenaHeight, 0);
+		disc3.rotation.set(Math.PI / 2, 0, 0);
+		disc4.position.set(0, -halfArenaHeight, 0);
+		disc4.rotation.set(Math.PI / -2, 0, 0);
 
 		var debugText1 = document.getElementById("debug1");
 		var debugText2 = document.getElementById("debug2");
@@ -204,9 +240,9 @@
 			timer.run(frameTime);
 
 			if (gameReset === true) {
-				ball.position.x = bluePaddle.position.x;
-				ball.position.y = bluePaddle.position.y;
-				ball.position.z = bluePaddle.position.z - ballRadius;
+				ball.position.x = 0;
+				ball.position.y = 0;
+				ball.position.z = 0;
 
 				ballSpeed = 60;
 				ballDirection.x = 0.5;
@@ -221,22 +257,22 @@
 			}
 
 			if (keyboard.pressed("D")) {
-				bluePaddle.position.x += 60 * frameTime;
+				bluePaddle.position.x += 50 * frameTime;
 			}
 			if (keyboard.pressed("A")) {
-				bluePaddle.position.x -= 60 * frameTime;
+				bluePaddle.position.x -= 50 * frameTime;
 			}
 			if (keyboard.pressed("W")) {
-				bluePaddle.position.y += 60 * frameTime;
+				bluePaddle.position.y += 50 * frameTime;
 			}
 			if (keyboard.pressed("S")) {
-				bluePaddle.position.y -= 60 * frameTime;
+				bluePaddle.position.y -= 50 * frameTime;
 			}
 			//joystick._pressed = true;
 			if (joystick) {
 				if (joystick._pressed === true) {
-					bluePaddle.position.x = oldBluePaddleX + (joystick.deltaX() / 4);
-					bluePaddle.position.y = oldBluePaddleY - (joystick.deltaY() / 4);
+					bluePaddle.position.x = oldBluePaddleX + (joystick.deltaX() / 1);
+					bluePaddle.position.y = oldBluePaddleY - (joystick.deltaY() / 1);
 				} else {
 					oldBluePaddleX = bluePaddle.position.x;
 					oldBluePaddleY = bluePaddle.position.y;
@@ -298,8 +334,24 @@
 					ballDirection.normalize();
 				}
 			} //end if bluePaddleMissed == false && redPaddleMissed == false
-
-
+			
+			if(ball.position.x > 0){
+				disc1.position.set(halfArenaWidth, ball.position.y, ball.position.z);
+				disc2.position.set(-halfArenaWidth, ball.position.y, 1000);
+			}
+			if(ball.position.x < 0){
+				disc2.position.set(-halfArenaWidth, ball.position.y, ball.position.z);
+				disc1.position.set(halfArenaWidth, ball.position.y, 1000);
+			}
+			if(ball.position.y > 0){
+				disc3.position.set(ball.position.x, halfArenaHeight, ball.position.z);
+				disc4.position.set(ball.position.x, -halfArenaHeight, 1000);
+			}
+			if(ball.position.y < 0){
+				disc4.position.set(ball.position.x, -halfArenaHeight, ball.position.z);
+				disc3.position.set(ball.position.x, halfArenaHeight, 1000);	
+			}
+			
 			camera.lookAt(bluePaddle.position);
 
 			renderer.render(scene, camera);
@@ -315,10 +367,7 @@
 		}
 
 		function checkBallPaddleCollision(ballPos, paddlePos) {
-			if (ballPos.x > paddlePos.x - halfPaddleWidth &&
-			    ballPos.x < paddlePos.x + halfPaddleWidth &&
-			    ballPos.y > paddlePos.y - halfPaddleHeight &&
-			    ballPos.y < paddlePos.y + halfPaddleHeight)
+			if (ballPos.x > paddlePos.x - halfPaddleWidth &&    ballPos.x < paddlePos.x + halfPaddleWidth &&    ballPos.y > paddlePos.y - halfPaddleHeight &&    ballPos.y < paddlePos.y + halfPaddleHeight)
 				return true;
 			else {
 				return false;
