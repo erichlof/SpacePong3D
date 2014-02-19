@@ -201,7 +201,7 @@
 
 		var light = new THREE.PointLight('rgb(255,255,255)', 1, 0);
 		scene.add(light);
-		light.position.set(1000, 500, -300);         
+		light.position.set(1000, 500, -300);
 		sunSphere.position.copy(light.position);
 		 
 		camera.position.z = 160;
@@ -367,7 +367,7 @@
 		}
 
 		function checkBallPaddleCollision(ballPos, paddlePos) {
-			if (ballPos.x > paddlePos.x - halfPaddleWidth &&    ballPos.x < paddlePos.x + halfPaddleWidth &&    ballPos.y > paddlePos.y - halfPaddleHeight &&    ballPos.y < paddlePos.y + halfPaddleHeight)
+			if (ballPos.x > paddlePos.x - halfPaddleWidth && ballPos.x < paddlePos.x + halfPaddleWidth && ballPos.y > paddlePos.y - halfPaddleHeight && ballPos.y < paddlePos.y + halfPaddleHeight)
 				return true;
 			else {
 				return false;
