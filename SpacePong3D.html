@@ -44,7 +44,7 @@
 		var scene = new THREE.Scene();
 		var camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 2000);
 		var clock = new THREE.Clock();
-		var timer = new THREEx.GameTimer(7);
+		var missedTimer = new THREEx.GameTimer(3);
 
 		var keyboard = new THREEx.KeyboardState();
 		var joystick = new VirtualJoystick({
@@ -243,8 +243,15 @@
 			requestAnimationFrame(animate);
 
 			frameTime = clock.getDelta();
-			timer.run(frameTime);
-
+			
+			if(bluePaddleMissed || redPaddleMissed){
+			
+				missedTimer.run(frameTime);
+				
+				if(missedTimer.alarmSounding)
+					gameReset = true;
+			}
+			
 			if (gameReset === true) {
 				ball.position.x = 0;
 				ball.position.y = 0;
@@ -258,6 +265,7 @@
 
 				bluePaddleMissed = false;
 				redPaddleMissed = false;
+				missedTimer.reset();
 
 				gameReset = false;
 			}
@@ -318,13 +326,21 @@
 
 
 			ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
+			
+			updateAI();
 
 			if (bluePaddleMissed == false && redPaddleMissed == false) {
 				//back wall
 				if ((ball.position.z - ballRadius) < redPaddle.position.z) {
 					ball.position.z = redPaddle.position.z + ballRadius;
-					ballDirection.reflect(backTriangleNormal);
-					ballDirection.normalize();
+					
+					collisionResult = checkBallPaddleCollision(ball.position, redPaddle.position);
+					if (collisionResult === true) {
+						ballDirection.reflect(backTriangleNormal);
+						ballDirection.normalize();
+					} else {
+						handleMiss(redPaddle);
+					}
 				}
 				//front wall
 				if ((ball.position.z + ballRadius) > bluePaddle.position.z) {
@@ -388,13 +404,18 @@
 			//debugText1.innerHTML = "Ball Dir X: " + ballDirection.x.toFixed(1) +
 			//"Ball Dir Y: " + ballDirection.y.toFixed(1) +
 			//"Ball Dir Z: " + ballDirection.z.toFixed(1);
-			debugText1.innerHTML = "timer Alarm: " + timer.alarmSounding;
-			debugText2.innerHTML = "firstTouchMove: " + firstTouchMove;
+			debugText1.innerHTML = "redPaddleMissed: " + redPaddleMissed;
+			debugText2.innerHTML = "bluePaddleMissed: " + bluePaddleMissed;
 			debugText3.innerHTML = "deltaXDifference: " + deltaXDifference.toFixed(1);
 			debugText4.innerHTML = "deltaYDifference: " + deltaYDifference.toFixed(1);
 
 		}
-
+		
+		function updateAI () {
+			redPaddle.position.x = ball.position.x;
+			redPaddle.position.y = ball.position.y;
+		}
+		
 		function checkBallPaddleCollision(ballPos, paddlePos) {
 			if (ballPos.x > paddlePos.x - halfPaddleWidth && ballPos.x < paddlePos.x + halfPaddleWidth && ballPos.y > paddlePos.y - halfPaddleHeight && ballPos.y < paddlePos.y + halfPaddleHeight)
 				return true;
@@ -404,7 +425,12 @@
 		}
 
 		function handleMiss(paddle) {
-			bluePaddleMissed = true;
+			if(paddle == bluePaddle){
+				bluePaddleMissed = true;
+			}
+			if(paddle == redPaddle){
+				redPaddleMissed = true;
+			}
 		}
 
 		function onWindowResize() {
