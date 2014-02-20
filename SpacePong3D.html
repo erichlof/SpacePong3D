@@ -3,7 +3,7 @@
 
 <head>
 
-	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	<title>SpacePong3D</title>
 </head>
 
@@ -65,6 +65,14 @@
 
 		var gameReset = true;
 		var frameTime = 0;
+		var firstTouchMove = true;
+		var joystickDampening = 2;
+		var deltaXDifference = 0;
+		var deltaYDifference = 0;
+		var oldDeltaX = 0;
+		var oldDeltaY = 0;
+		var newDeltaX = 0;
+		var newDeltaY = 0;
 
 		var ballSpeed = 0;
 		var ballDirection = new THREE.Vector3(0, 0, 0);
@@ -72,8 +80,6 @@
 		var paddleWidth = 20;
 		var paddleHeight = 14;
 		var paddleDepth = 4;
-		var oldBluePaddleX = 0;
-		var oldBluePaddleY = 0;
 		var halfPaddleWidth = paddleWidth / 2;
 		var halfPaddleHeight = paddleHeight / 2;
 		var arenaWidth = 100; //100
@@ -141,7 +147,7 @@
 		var boxMaterial = new THREE.MeshBasicMaterial({
 			color: 'rgb(0,0,255)',
 			transparent: true,
-			opacity: 0.5 
+			opacity: 0.5
 		});
 		var bluePaddle = new THREE.Mesh(boxGeometry, boxMaterial);
 		scene.add(bluePaddle);
@@ -151,7 +157,7 @@
 		var boxMaterial = new THREE.MeshBasicMaterial({
 			color: 'rgb(255,0,0)',
 			transparent: true,
-			opacity: 0.5 
+			opacity: 0.5
 		});
 		var redPaddle = new THREE.Mesh(boxGeometry, boxMaterial);
 		scene.add(redPaddle);
@@ -169,7 +175,7 @@
 		var sphereMaterial = new THREE.MeshBasicMaterial({
 			color: 'rgb(255,255,255)',
 			transparent: true,
-			opacity: 0.7 
+			opacity: 0.7
 		});
 		var ball = new THREE.Mesh(sphereGeometry, sphereMaterial);
 		scene.add(ball);
@@ -203,7 +209,7 @@
 		scene.add(light);
 		light.position.set(1000, 500, -300);
 		sunSphere.position.copy(light.position);
-		 
+
 		camera.position.z = 160;
 
 		bluePaddle.position.x = 0.0;
@@ -213,8 +219,8 @@
 		redPaddle.position.x = 0.0;
 		redPaddle.position.y = 0.0;
 		redPaddle.position.z = -arenaDepth / 2 - paddleDepth;
-		
-		
+
+
 		disc1.position.set(halfArenaWidth, 0, 0);
 		disc1.rotation.set(0, Math.PI / -2, 0);
 		disc2.position.set(-halfArenaWidth, 0, 0);
@@ -268,16 +274,39 @@
 			if (keyboard.pressed("S")) {
 				bluePaddle.position.y -= 50 * frameTime;
 			}
-			//joystick._pressed = true;
+
 			if (joystick) {
-				if (joystick._pressed === true) {
-					bluePaddle.position.x = oldBluePaddleX + (joystick.deltaX() / 1);
-					bluePaddle.position.y = oldBluePaddleY - (joystick.deltaY() / 1);
-				} else {
-					oldBluePaddleX = bluePaddle.position.x;
-					oldBluePaddleY = bluePaddle.position.y;
+				newDeltaX = joystick.deltaX();
+				newDeltaY = joystick.deltaY();
+
+				deltaXDifference = newDeltaX - oldDeltaX;
+				deltaYDifference = newDeltaY - oldDeltaY;
+
+				if (joystick._pressed == true) {
+
+					if (firstTouchMove == false) {
+						bluePaddle.position.x += (deltaXDifference / joystickDampening);
+						bluePaddle.position.y -= (deltaYDifference / joystickDampening);
+					} else if (firstTouchMove == true) {
+						//did the player swipe yet?
+						if (Math.abs(deltaXDifference) > 0 || Math.abs(deltaYDifference) > 0) {
+							//initial touchmove starts rough, so make sure it is smooth first
+							if (Math.abs(deltaXDifference) < 10 && Math.abs(deltaYDifference) < 10)
+								firstTouchMove = false; //only a small first movement will trigger this
+						}
+					}
+
+				} else { //joystick not pressed
+					//reset firstTouchMove
+					firstTouchMove = true;
 				}
-			}
+
+				oldDeltaX = newDeltaX;
+				oldDeltaY = newDeltaY;
+
+
+			} //end if(joystick)
+
 			if (bluePaddle.position.x > rightWall)
 				bluePaddle.position.x = rightWall;
 			if (bluePaddle.position.x < leftWall)
@@ -334,24 +363,24 @@
 					ballDirection.normalize();
 				}
 			} //end if bluePaddleMissed == false && redPaddleMissed == false
-			
-			if(ball.position.x > 0){
+
+			if (ball.position.x > 0) {
 				disc1.position.set(halfArenaWidth, ball.position.y, ball.position.z);
 				disc2.position.set(-halfArenaWidth, ball.position.y, 1000);
 			}
-			if(ball.position.x < 0){
+			if (ball.position.x < 0) {
 				disc2.position.set(-halfArenaWidth, ball.position.y, ball.position.z);
 				disc1.position.set(halfArenaWidth, ball.position.y, 1000);
 			}
-			if(ball.position.y > 0){
+			if (ball.position.y > 0) {
 				disc3.position.set(ball.position.x, halfArenaHeight, ball.position.z);
 				disc4.position.set(ball.position.x, -halfArenaHeight, 1000);
 			}
-			if(ball.position.y < 0){
+			if (ball.position.y < 0) {
 				disc4.position.set(ball.position.x, -halfArenaHeight, ball.position.z);
-				disc3.position.set(ball.position.x, halfArenaHeight, 1000);	
+				disc3.position.set(ball.position.x, halfArenaHeight, 1000);
 			}
-			
+
 			camera.lookAt(bluePaddle.position);
 
 			renderer.render(scene, camera);
@@ -360,9 +389,9 @@
 			//"Ball Dir Y: " + ballDirection.y.toFixed(1) +
 			//"Ball Dir Z: " + ballDirection.z.toFixed(1);
 			debugText1.innerHTML = "timer Alarm: " + timer.alarmSounding;
-			debugText2.innerHTML = "timer: " + timer.counter.toFixed(1);
-			debugText3.innerHTML = "bluePaddleMissed: " + bluePaddleMissed;
-			debugText4.innerHTML = "collisionResult: " + collisionResult;
+			debugText2.innerHTML = "firstTouchMove: " + firstTouchMove;
+			debugText3.innerHTML = "deltaXDifference: " + deltaXDifference.toFixed(1);
+			debugText4.innerHTML = "deltaYDifference: " + deltaYDifference.toFixed(1);
 
 		}
 
