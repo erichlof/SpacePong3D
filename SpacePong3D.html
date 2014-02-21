@@ -13,11 +13,11 @@
 	</div>
 
 	<div id="help1" style="position:fixed; left:40%; bottom:8%; color:grey;">
-		Desktop: Press W A S D keys, or Click/Drag Mouse to move
+		Desktop: Press 'M' to control paddle with Mouse. Or 'WASD' keys to move paddle
 	</div>
 
 	<div id="help2" style="position:fixed; left:40%; bottom:4%; color:grey;">
-		Mobile: Hold finger down and slow Swipe to move
+		Mobile: Hold finger down and slow Swipe to move paddle
 	</div>
 
 	<div id="debug1" style="position:fixed; left:5%; top:4%; color:grey;">
@@ -95,6 +95,10 @@
 		var collisionResult = false;
 		var bluePaddleMissed = false;
 		var redPaddleMissed = false;
+		var redPaddleDesiredDirection = new THREE.Vector3(0, 0, 0);
+		var redPaddleMaxSpeed = 200;
+		var redPaddlePosZ = 0;
+		var mouseControl = false;
 		/*
 		var arenaGeometry = new THREE.BoxGeometry(arenaWidth, arenaHeight, arenaDepth);
 		var arenaMaterial = new THREE.MeshBasicMaterial({
@@ -218,7 +222,8 @@
 
 		redPaddle.position.x = 0.0;
 		redPaddle.position.y = 0.0;
-		redPaddle.position.z = -arenaDepth / 2 - paddleDepth;
+		redPaddlePosZ = -arenaDepth / 2 - paddleDepth;
+		redPaddle.position.z = redPaddlePosZ;
 
 
 		disc1.position.set(halfArenaWidth, 0, 0);
@@ -244,15 +249,7 @@
 
 			frameTime = clock.getDelta();
 			
-			if(bluePaddleMissed || redPaddleMissed){
-			
-				missedTimer.run(frameTime);
-				
-				if(missedTimer.alarmSounding)
-					gameReset = true;
-			}
-			
-			if (gameReset === true) {
+			if (gameReset) {
 				ball.position.x = 0;
 				ball.position.y = 0;
 				ball.position.z = 0;
@@ -282,6 +279,11 @@
 			if (keyboard.pressed("S")) {
 				bluePaddle.position.y -= 50 * frameTime;
 			}
+			//for debug
+			if(keyboard.pressed("M")){
+				mouseControl = true;
+			}
+			  
 
 			if (joystick) {
 				newDeltaX = joystick.deltaX();
@@ -289,8 +291,11 @@
 
 				deltaXDifference = newDeltaX - oldDeltaX;
 				deltaYDifference = newDeltaY - oldDeltaY;
-
-				if (joystick._pressed == true) {
+				
+				
+				if(mouseControl)joystick._pressed = true;
+				
+				if (joystick._pressed) {
 
 					if (firstTouchMove == false) {
 						bluePaddle.position.x += (deltaXDifference / joystickDampening);
@@ -314,7 +319,13 @@
 
 
 			} //end if(joystick)
-
+			
+			ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
+			
+			if(bluePaddleMissed == false && redPaddleMissed == false)
+				updateAI();
+			
+			//keep players inside arena
 			if (bluePaddle.position.x > rightWall)
 				bluePaddle.position.x = rightWall;
 			if (bluePaddle.position.x < leftWall)
@@ -323,14 +334,22 @@
 				bluePaddle.position.y = topWall;
 			if (bluePaddle.position.y < bottomWall)
 				bluePaddle.position.y = bottomWall;
+				
+			if (redPaddle.position.x > rightWall)
+				redPaddle.position.x = rightWall;
+			if (redPaddle.position.x < leftWall)
+				redPaddle.position.x = leftWall;
+			if (redPaddle.position.y > topWall)
+				redPaddle.position.y = topWall;
+			if (redPaddle.position.y < bottomWall)
+				redPaddle.position.y = bottomWall;
 
 
-			ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
+
 			
-			updateAI();
 
 			if (bluePaddleMissed == false && redPaddleMissed == false) {
-				//back wall
+				//back wall Red Paddle
 				if ((ball.position.z - ballRadius) < redPaddle.position.z) {
 					ball.position.z = redPaddle.position.z + ballRadius;
 					
@@ -338,11 +357,12 @@
 					if (collisionResult === true) {
 						ballDirection.reflect(backTriangleNormal);
 						ballDirection.normalize();
+						ballSpeed *= 1.02;
 					} else {
 						handleMiss(redPaddle);
 					}
 				}
-				//front wall
+				//front wall Blue Paddle
 				if ((ball.position.z + ballRadius) > bluePaddle.position.z) {
 					ball.position.z = bluePaddle.position.z - ballRadius;
 
@@ -350,6 +370,7 @@
 					if (collisionResult === true) {
 						ballDirection.reflect(frontTriangleNormal);
 						ballDirection.normalize();
+						ballSpeed *= 1.02;
 					} else {
 						handleMiss(bluePaddle);
 					}
@@ -382,19 +403,30 @@
 
 			if (ball.position.x > 0) {
 				disc1.position.set(halfArenaWidth, ball.position.y, ball.position.z);
-				disc2.position.set(-halfArenaWidth, ball.position.y, 1000);
+				disc2.position.set(1000, 1000, 1000);
 			}
 			if (ball.position.x < 0) {
 				disc2.position.set(-halfArenaWidth, ball.position.y, ball.position.z);
-				disc1.position.set(halfArenaWidth, ball.position.y, 1000);
+				disc1.position.set(1000, 1000, 1000);
 			}
 			if (ball.position.y > 0) {
 				disc3.position.set(ball.position.x, halfArenaHeight, ball.position.z);
-				disc4.position.set(ball.position.x, -halfArenaHeight, 1000);
+				disc4.position.set(1000, 1000, 1000);
 			}
 			if (ball.position.y < 0) {
 				disc4.position.set(ball.position.x, -halfArenaHeight, ball.position.z);
-				disc3.position.set(ball.position.x, halfArenaHeight, 1000);
+				disc3.position.set(1000, 1000, 1000);
+			}
+			if(bluePaddleMissed || redPaddleMissed){
+				disc1.position.set(1000, 1000, 1000);
+				disc2.position.set(1000, 1000, 1000);
+				disc3.position.set(1000, 1000, 1000);
+				disc4.position.set(1000, 1000, 1000);
+				
+				missedTimer.run(frameTime);
+				
+				if(missedTimer.alarmSounding)
+					gameReset = true;
 			}
 
 			camera.lookAt(bluePaddle.position);
@@ -412,8 +444,15 @@
 		}
 		
 		function updateAI () {
-			redPaddle.position.x = ball.position.x;
-			redPaddle.position.y = ball.position.y;
+		//the following 2 lines provide the simplest AI ever, but, the computer will never lose! :)
+			//redPaddle.position.x = ball.position.x;
+			//redPaddle.position.y = ball.position.y;
+			
+			//the following is not much more complex, but makes it look like the computer is 'trying'
+			redPaddleDesiredDirection.subVectors(ball.position, redPaddle.position);
+			redPaddleDesiredDirection.normalize();
+			redPaddle.translateOnAxis(redPaddleDesiredDirection, redPaddleMaxSpeed * frameTime);
+			redPaddle.position.z = redPaddlePosZ;//clamp redPaddle's z position to back wall
 		}
 		
 		function checkBallPaddleCollision(ballPos, paddlePos) {
