@@ -37,6 +37,8 @@
 	</div>
 
 	<script src="http://threejs.org/build/three.min.js"></script>
+	<script src="js/threex.texturecube.js"></script>
+	<script src="js/threex.skymap.js"></script>
 	<script src="js/threex.keyboardstate.js"></script>
 	<script src="js/virtualjoystick.js"></script>
 	<script src="js/threex.GameTimer.js"></script>
@@ -109,6 +111,8 @@
 		var arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
 		scene.add(arena);
 */
+		var skybox = THREEx.createSkymap('skybox')
+		scene.add( skybox );
 		var backTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth));
 		var backTriangleNormal = backTriangle.normal();
 		var frontTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
