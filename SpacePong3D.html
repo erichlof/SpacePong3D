@@ -98,9 +98,14 @@
 		var bluePaddleMissed = false;
 		var redPaddleMissed = false;
 		var redPaddleDesiredDirection = new THREE.Vector3(0, 0, 0);
-		var redPaddleMaxSpeed = 200;
+		var redPaddleMaxSpeed = 150;
 		var redPaddlePosZ = 0;
 		var mouseControl = false;
+          	var blueScore = 0;
+          	var redScore = 0;
+          	var resetScores = true;
+          	var blueWins = false;
+          	var redWins = false;
 		/*
 		var arenaGeometry = new THREE.BoxGeometry(arenaWidth, arenaHeight, arenaDepth);
 		var arenaMaterial = new THREE.MeshBasicMaterial({
@@ -266,8 +271,14 @@
 
 				bluePaddleMissed = false;
 				redPaddleMissed = false;
+                          	blueWins = false;
+                          	redWins = false;
 				missedTimer.reset();
-
+				if (resetScores){
+                                	blueScore = 0;
+                                  	redScore = 0;
+                                  	resetScores = false;
+                                }
 				gameReset = false;
 			}
 
@@ -287,7 +298,7 @@
 			if(keyboard.pressed("M")){
 				mouseControl = true;
 			}
-			  
+			  
 
 			if (joystick) {
 				newDeltaX = joystick.deltaX();
@@ -440,15 +451,15 @@
 			//debugText1.innerHTML = "Ball Dir X: " + ballDirection.x.toFixed(1) +
 			//"Ball Dir Y: " + ballDirection.y.toFixed(1) +
 			//"Ball Dir Z: " + ballDirection.z.toFixed(1);
-			debugText1.innerHTML = "redPaddleMissed: " + redPaddleMissed;
-			debugText2.innerHTML = "bluePaddleMissed: " + bluePaddleMissed;
-			debugText3.innerHTML = "deltaXDifference: " + deltaXDifference.toFixed(1);
-			debugText4.innerHTML = "deltaYDifference: " + deltaYDifference.toFixed(1);
+			debugText1.innerHTML = "redScore: " + redScore;
+			debugText2.innerHTML = "blueScore: " + blueScore;
+			debugText3.innerHTML = "redWins: " + redWins;
+			debugText4.innerHTML = "blueWins: " + blueWins;
 
 		}
 		
 		function updateAI () {
-		//the following 2 lines provide the simplest AI ever, but, the computer will never lose! :)
+			//the following 2 lines provide the simplest AI ever, but, the computer will never lose! :)
 			//redPaddle.position.x = ball.position.x;
 			//redPaddle.position.y = ball.position.y;
 			
@@ -470,10 +481,21 @@
 		function handleMiss(paddle) {
 			if(paddle == bluePaddle){
 				bluePaddleMissed = true;
+                          	redScore += 1;
 			}
 			if(paddle == redPaddle){
 				redPaddleMissed = true;
+                          	blueScore += 1;
 			}
+                  	
+                  	if(redScore > 4){
+                        	redWins = true;
+                          	resetScores =true;
+                        }
+                  	if(blueScore > 4){
+                        	blueWins = true;
+                          	resetScores = true;
+                        }
 		}
 
 		function onWindowResize() {
