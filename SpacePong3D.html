@@ -43,8 +43,15 @@
 	<script src="js/virtualjoystick.js"></script>
 	<script src="js/threex.GameTimer.js"></script>
 	<script>
+		var windowWidth = window.innerWidth;
+		var windowHeight = window.innerHeight;
+		var halfWindowWidth = windowWidth / 2;
+		var halfWindowHeight = windowHeight / 2;
 		var scene = new THREE.Scene();
-		var camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 2000);
+		var sceneOrtho = new THREE.Scene();
+		var camera = new THREE.PerspectiveCamera(65, windowWidth / windowHeight, 0.1, 2000);
+		var cameraOrtho = new THREE.OrthographicCamera( - halfWindowWidth, halfWindowWidth, halfWindowHeight, - halfWindowHeight, 1, 10 );
+		cameraOrtho.position.z = 10;
 		var clock = new THREE.Clock();
 		var missedTimer = new THREEx.GameTimer(3);
 
@@ -61,7 +68,8 @@
 
 		var renderer = new THREE.WebGLRenderer();
 		renderer.setClearColor('rgb(0,0,0)', 1);
-		renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.setSize(windowWidth, windowHeight);
+		renderer.autoClear = false; // To allow render overlay on top
 		document.body.appendChild(renderer.domElement);
 		window.addEventListener('resize', onWindowResize, false);
 
@@ -222,6 +230,24 @@
 		scene.add(light);
 		light.position.set(1000, 500, -300);
 		sunSphere.position.copy(light.position);
+		
+		// create a canvas element
+		var canvas1Width = 64; 
+		var canvas1Height = 64;
+		var canvas1 = document.createElement('canvas');
+		canvas1.width = canvas1Width; canvas1.height = canvas1Height;
+		var context1 = canvas1.getContext('2d');
+		context1.font = "bold 60px Arial";
+		context1.fillStyle = "rgba(255,0,0,1.0)";
+		context1.fillText(redScore.toString(), 0, canvas1Height);
+		//context1.fillText("Hello World", 0, canvas1Height);
+		// canvas contents will be used for a texture
+		var textTexture = new THREE.Texture(canvas1) 
+		textTexture.needsUpdate = true;
+		var textMaterial = new THREE.SpriteMaterial( { map: textTexture } );
+		var sprite = new THREE.Sprite( textMaterial );
+		sceneOrtho.add( sprite );
+		updateHUDSprites();
 
 		camera.position.z = 160;
 
@@ -279,6 +305,11 @@
                                   	redScore = 0;
                                   	resetScores = false;
                                 }
+				
+				context1.clearRect(0,0,canvas1Width, canvas1Height);
+				context1.fillText(redScore.toString(), 0, canvas1Height);
+				textTexture.needsUpdate = true;
+				
 				gameReset = false;
 			}
 
@@ -445,14 +476,19 @@
 			}
 
 			camera.lookAt(bluePaddle.position);
-
+			
+			
+			renderer.clear();
 			renderer.render(scene, camera);
+			renderer.clearDepth();
+			renderer.render( sceneOrtho, cameraOrtho );
 
 			//debugText1.innerHTML = "Ball Dir X: " + ballDirection.x.toFixed(1) +
 			//"Ball Dir Y: " + ballDirection.y.toFixed(1) +
 			//"Ball Dir Z: " + ballDirection.z.toFixed(1);
-			debugText1.innerHTML = "redScore: " + redScore;
-			debugText2.innerHTML = "blueScore: " + blueScore;
+			
+			//debugText1.innerHTML = "redScore: " + redScore;
+			//debugText2.innerHTML = "blueScore: " + blueScore;
 			debugText3.innerHTML = "redWins: " + redWins;
 			debugText4.innerHTML = "blueWins: " + blueWins;
 
@@ -482,6 +518,10 @@
 			if(paddle == bluePaddle){
 				bluePaddleMissed = true;
                           	redScore += 1;
+				context1.clearRect(0,0,canvas1Width, canvas1Height);
+				context1.fillText(redScore.toString(), 0, canvas1Height);
+				textTexture.needsUpdate = true;
+				//updateHUDSprites();
 			}
 			if(paddle == redPaddle){
 				redPaddleMissed = true;
@@ -497,11 +537,40 @@
                           	resetScores = true;
                         }
 		}
+		
+		function updateHUDSprites(){
+		
+			//var material = sprite.material;
+			var imageWidth = canvas1Width;
+			var imageHeight = canvas1Height;
+			var halfImageWidth = imageWidth / 2;
+			var halfImageHeight = imageHeight / 2;
+
+			sprite.scale.set( halfWindowWidth * halfImageWidth / 200 , halfWindowHeight * halfImageHeight / 150 , 1 );
+			//sprite.position.set( - halfWindowWidth + halfImageWidth,   halfWindowHeight - halfImageHeight, 1 ); // top left
+			sprite.position.set(  halfWindowWidth - halfImageWidth,   halfWindowHeight - halfImageHeight, 1 ); // top right
+			//sprite.position.set( - halfWindowWidth + halfImageWidth, - halfWindowHeight + halfImageHeight, 1 ); // bottom left
+			//sprite.position.set(   halfWindowWidth - halfImageWidth, - halfWindowHeight + halfImageHeight, 1 ); // bottom right
+			
+		}
 
 		function onWindowResize() {
-			camera.aspect = window.innerWidth / window.innerHeight;
+		 	windowWidth = window.innerWidth;
+			windowHeight = window.innerHeight;
+			halfWindowWidth = windowWidth / 2;
+			halfWindowHeight = windowHeight / 2;
+			
+			camera.aspect = windowWidth / windowHeight;
 			camera.updateProjectionMatrix();
-			renderer.setSize(window.innerWidth, window.innerHeight);
+			
+			cameraOrtho.left = - halfWindowWidth;
+			cameraOrtho.right = halfWindowWidth;
+			cameraOrtho.top = halfWindowHeight;
+			cameraOrtho.bottom = - halfWindowHeight;
+			cameraOrtho.updateProjectionMatrix();
+			
+			updateHUDSprites();
+			renderer.setSize(windowWidth, windowHeight);
 		}
 	</script>
 
