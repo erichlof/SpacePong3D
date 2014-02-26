@@ -106,14 +106,14 @@
 		var bluePaddleMissed = false;
 		var redPaddleMissed = false;
 		var redPaddleDesiredDirection = new THREE.Vector3(0, 0, 0);
-		var redPaddleMaxSpeed = 150;
+		var redPaddleMaxSpeed = 100;//difficulty level 50 easy, 100 medium, 150 hard, 200 expert
 		var redPaddlePosZ = 0;
 		var mouseControl = false;
-          	var blueScore = 0;
-          	var redScore = 0;
-          	var resetScores = true;
-          	var blueWins = false;
-          	var redWins = false;
+          	var blueScore = 0;
+          	var redScore = 0;
+          	var resetScores = true;
+          	var blueWins = false;
+          	var redWins = false;
 		/*
 		var arenaGeometry = new THREE.BoxGeometry(arenaWidth, arenaHeight, arenaDepth);
 		var arenaMaterial = new THREE.MeshBasicMaterial({
@@ -237,16 +237,29 @@
 		var canvas1 = document.createElement('canvas');
 		canvas1.width = canvas1Width; canvas1.height = canvas1Height;
 		var context1 = canvas1.getContext('2d');
+		var canvas2 = document.createElement('canvas');
+		canvas2.width = canvas1Width; canvas2.height = canvas1Height;
+		var context2 = canvas2.getContext('2d');
+		
 		context1.font = "bold 60px Arial";
 		context1.fillStyle = "rgba(255,0,0,1.0)";
 		context1.fillText(redScore.toString(), 0, canvas1Height);
-		//context1.fillText("Hello World", 0, canvas1Height);
+		context2.font = "bold 60px Arial";
+		context2.fillStyle = "rgba(0,0,255,1.0)";
+		context2.fillText(blueScore.toString(), 0, canvas1Height);
+		
 		// canvas contents will be used for a texture
-		var textTexture = new THREE.Texture(canvas1) 
-		textTexture.needsUpdate = true;
-		var textMaterial = new THREE.SpriteMaterial( { map: textTexture } );
-		var sprite = new THREE.Sprite( textMaterial );
-		sceneOrtho.add( sprite );
+		var redScoreTexture = new THREE.Texture(canvas1) 
+		redScoreTexture.needsUpdate = true;
+		var redScoreMaterial = new THREE.SpriteMaterial( { map: redScoreTexture } );
+		var redScoreSprite = new THREE.Sprite( redScoreMaterial );
+		sceneOrtho.add( redScoreSprite );
+		var blueScoreTexture = new THREE.Texture(canvas2) 
+		blueScoreTexture.needsUpdate = true;
+		var blueScoreMaterial = new THREE.SpriteMaterial( { map: blueScoreTexture } );
+		var blueScoreSprite = new THREE.Sprite( blueScoreMaterial );
+		sceneOrtho.add( blueScoreSprite );
+		
 		updateHUDSprites();
 
 		camera.position.z = 160;
@@ -290,25 +303,28 @@
 				ball.position.z = 0;
 
 				ballSpeed = 60;
-				ballDirection.x = 0.5;
-				ballDirection.y = 0.5;
+				ballDirection.x = Math.random() * 2 - 1;
+				ballDirection.y = Math.random() * 2 - 1;
 				ballDirection.z = -1;
-				ballDirection.normalize();
+				ballDirection.normalize(); 
 
 				bluePaddleMissed = false;
 				redPaddleMissed = false;
-                          	blueWins = false;
-                          	redWins = false;
+                          	blueWins = false;
+                          	redWins = false;
 				missedTimer.reset();
 				if (resetScores){
-                                	blueScore = 0;
-                                  	redScore = 0;
-                                  	resetScores = false;
-                                }
+                                	blueScore = 0;
+                                  	redScore = 0;
+                                  	resetScores = false;
+                                }
 				
 				context1.clearRect(0,0,canvas1Width, canvas1Height);
 				context1.fillText(redScore.toString(), 0, canvas1Height);
-				textTexture.needsUpdate = true;
+				redScoreTexture.needsUpdate = true;
+				context2.clearRect(0,0,canvas1Width, canvas1Height);
+				context2.fillText(blueScore.toString(), 0, canvas1Height);
+				blueScoreTexture.needsUpdate = true;
 				
 				gameReset = false;
 			}
@@ -366,6 +382,8 @@
 
 			} //end if(joystick)
 			
+			//future gravity effect?
+			//ballDirection.y -= 0.5 * frameTime;
 			ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
 			
 			if(bluePaddleMissed == false && redPaddleMissed == false)
@@ -517,25 +535,28 @@
 		function handleMiss(paddle) {
 			if(paddle == bluePaddle){
 				bluePaddleMissed = true;
-                          	redScore += 1;
+                          	redScore += 1;
 				context1.clearRect(0,0,canvas1Width, canvas1Height);
 				context1.fillText(redScore.toString(), 0, canvas1Height);
-				textTexture.needsUpdate = true;
+				redScoreTexture.needsUpdate = true;
 				//updateHUDSprites();
 			}
 			if(paddle == redPaddle){
 				redPaddleMissed = true;
-                          	blueScore += 1;
+                          	blueScore += 1;
+				context2.clearRect(0,0,canvas1Width, canvas1Height);
+				context2.fillText(blueScore.toString(), 0, canvas1Height);
+				blueScoreTexture.needsUpdate = true;
 			}
-                  	
-                  	if(redScore > 4){
-                        	redWins = true;
-                          	resetScores =true;
-                        }
-                  	if(blueScore > 4){
-                        	blueWins = true;
-                          	resetScores = true;
-                        }
+                  	
+                  	if(redScore > 4){
+                        	redWins = true;
+                          	resetScores =true;
+                        }
+                  	if(blueScore > 4){
+                        	blueWins = true;
+                          	resetScores = true;
+                        }
 		}
 		
 		function updateHUDSprites(){
@@ -546,12 +567,13 @@
 			var halfImageWidth = imageWidth / 2;
 			var halfImageHeight = imageHeight / 2;
 
-			sprite.scale.set( halfWindowWidth * halfImageWidth / 200 , halfWindowHeight * halfImageHeight / 150 , 1 );
-			//sprite.position.set( - halfWindowWidth + halfImageWidth,   halfWindowHeight - halfImageHeight, 1 ); // top left
-			sprite.position.set(  halfWindowWidth - halfImageWidth,   halfWindowHeight - halfImageHeight, 1 ); // top right
+			redScoreSprite.scale.set( halfWindowWidth * halfImageWidth / 200 , halfWindowHeight * halfImageHeight / 200 , 1 );
+			//sprite.position.set( - halfWindowWidth + halfImageWidth,   halfWindowHeight - halfImageHeight, 1 ); // top left
+			redScoreSprite.position.set(  halfWindowWidth - halfImageWidth,   halfWindowHeight - halfImageHeight, 1 ); // top right
 			//sprite.position.set( - halfWindowWidth + halfImageWidth, - halfWindowHeight + halfImageHeight, 1 ); // bottom left
-			//sprite.position.set(   halfWindowWidth - halfImageWidth, - halfWindowHeight + halfImageHeight, 1 ); // bottom right
-			
+			//sprite.position.set(   halfWindowWidth - halfImageWidth, - halfWindowHeight + halfImageHeight, 1 ); // bottom right
+			blueScoreSprite.scale.set( halfWindowWidth * halfImageWidth / 200 , halfWindowHeight * halfImageHeight / 200 , 1 );
+			blueScoreSprite.position.set(  halfWindowWidth - (windowWidth / 6 ) ,   halfWindowHeight - halfImageHeight, 1 );
 		}
 
 		function onWindowResize() {
