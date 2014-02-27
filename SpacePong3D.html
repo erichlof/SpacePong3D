@@ -575,17 +575,13 @@
 
 		function updateHUDSprites() {
 
-			var imageWidth = canvas1Width;
-			var imageHeight = canvas1Height;
-			var halfImageWidth = imageWidth / 2;
-			var halfImageHeight = imageHeight / 2;
 			var aspectRatio = windowHeight / windowWidth;
 
-			redScoreSprite.scale.set(aspectRatio * windowWidth * 0.1, windowHeight * 0.1, 1);
-			redScoreSprite.position.set( halfWindowWidth * 0.85, halfWindowHeight * 0.9, 1);
+			redScoreSprite.scale.set( aspectRatio * windowWidth * 0.1, windowHeight * 0.1, 1 );
+			redScoreSprite.position.set( halfWindowWidth * 0.85, halfWindowHeight * 0.9, 1 );
 
-			blueScoreSprite.scale.set(aspectRatio * windowWidth * 0.1, windowHeight * 0.1, 1);
-			blueScoreSprite.position.set( halfWindowWidth * 0.65, halfWindowHeight * 0.9, 1);
+			blueScoreSprite.scale.set( aspectRatio * windowWidth * 0.1, windowHeight * 0.1, 1 );
+			blueScoreSprite.position.set( halfWindowWidth * 0.65, halfWindowHeight * 0.9, 1 );
 
 		}
 
