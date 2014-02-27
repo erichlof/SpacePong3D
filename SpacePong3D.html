@@ -312,7 +312,7 @@
 				if (resetScores) {
 					blueScore = 0;
 					redScore = 0;
-					resetScores = false;       
+					resetScores = false;
 				}
 
 				context1.clearRect(0, 0, canvas1Width, canvas1Height);
@@ -568,7 +568,7 @@
 				resetScores = true;
 			}
 			if (blueScore > 4) {
-				blueWins = true;   
+				blueWins = true;
 				resetScores = true;
 			}
 		}
@@ -582,10 +582,10 @@
 			var aspectRatio = windowHeight / windowWidth;
 
 			redScoreSprite.scale.set(aspectRatio * windowWidth * 0.1, windowHeight * 0.1, 1);
-			redScoreSprite.position.set( halfWindowWidth * 0.85,  halfWindowHeight * 0.9, 1);
+			redScoreSprite.position.set( halfWindowWidth * 0.85, halfWindowHeight * 0.9, 1);
 
 			blueScoreSprite.scale.set(aspectRatio * windowWidth * 0.1, windowHeight * 0.1, 1);
-			blueScoreSprite.position.set( halfWindowWidth * 0.65,  halfWindowHeight * 0.9, 1);
+			blueScoreSprite.position.set( halfWindowWidth * 0.65, halfWindowHeight * 0.9, 1);
 
 		}
 
