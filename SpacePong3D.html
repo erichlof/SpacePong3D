@@ -50,9 +50,7 @@
 		var scene = new THREE.Scene();
 		var sceneOrtho = new THREE.Scene();
 		var camera = new THREE.PerspectiveCamera(65, windowWidth / windowHeight, 0.1, 2000);
-		var cameraOrtho = new THREE.OrthographicCamera(-halfWindowWidth, halfWindowWidth, halfWindowHeight, 
-
--halfWindowHeight, 1, 10);
+		var cameraOrtho = new THREE.OrthographicCamera(-halfWindowWidth, halfWindowWidth, halfWindowHeight, -halfWindowHeight, 1, 10);
 		cameraOrtho.position.z = 10;
 		var clock = new THREE.Clock();
 		var missedTimer = new THREEx.GameTimer(3);
@@ -111,88 +109,44 @@
 		var redPaddleDesiredDirection = new THREE.Vector3(0, 0, 0);
 		var redPaddleMaxSpeed = 150; //difficulty level 50 easy, 100 medium, 150 hard, 200 expert
 		var redPaddleFixedPosZ = 0;
-		var mouseControl = false;         
-		var blueScore = 0;         
-		var redScore = 0;         
-		var resetScores = true;         
-		var blueWins = false;         
+		var mouseControl = false;
+		var blueScore = 0;
+		var redScore = 0;
+		var resetScores = true;
+		var blueWins = false;
 		var redWins = false;
 		
 		var skybox = THREEx.createSkymap('skybox')
 		 scene.add(skybox);
-		var backTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new 
-
-THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, 
-
--halfArenaDepth));
+		var backTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth));
 		var backTriangleNormal = backTriangle.normal();
-		var frontTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new 
-
-THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, 
-
-halfArenaDepth));
+		var frontTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
 		var frontTriangleNormal = frontTriangle.normal();
-		var rightTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new 
-
-THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth));
+		var rightTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth));
 		var rightTriangleNormal = rightTriangle.normal();
-		var leftTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new 
-
-THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, 
-
-halfArenaDepth));
+		var leftTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
 		var leftTriangleNormal = leftTriangle.normal();
-		var topTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth), new 
-
-THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
+		var topTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
 		var topTriangleNormal = topTriangle.normal();
-		var bottomTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new 
-
-THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, 
-
-halfArenaDepth));
+		var bottomTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth));
 		var bottomTriangleNormal = bottomTriangle.normal();
 
 		var lineGeometry = new THREE.Geometry();
 		var vertArray = lineGeometry.vertices;
-		vertArray.push(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new 
+		vertArray.push(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth),
+			new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth),
+			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth),
+			new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth),
 
-THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth),
-			new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, 
+			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth),
 
--halfArenaHeight, halfArenaDepth),
-			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, 
-
-halfArenaHeight, halfArenaDepth),
-			new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, 
-
--halfArenaHeight, halfArenaDepth),
-
-			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, 
-
--halfArenaHeight, -halfArenaDepth),
-			new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, 
-
--halfArenaHeight, -halfArenaDepth),
-			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, 
-
-halfArenaHeight, -halfArenaDepth),
-			new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, 
-
--halfArenaHeight, -halfArenaDepth),
-
-			new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, 
-
--halfArenaHeight, -halfArenaDepth),
-			new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, 
-
--halfArenaHeight, -halfArenaDepth),
-			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, 
-
-halfArenaHeight, -halfArenaDepth),
-			new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, 
-
-halfArenaHeight, -halfArenaDepth)
+			new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth),
+			new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth)
 		);
 		lineGeometry.computeLineDistances();
 		var lineMaterial = new THREE.LineBasicMaterial({
@@ -351,14 +305,14 @@ halfArenaHeight, -halfArenaDepth)
 				ballDirection.normalize();
 
 				bluePaddleMissed = false;
-				redPaddleMissed = false;                         
-				blueWins = false;                         
+				redPaddleMissed = false;
+				blueWins = false;
 				redWins = false;
 				missedTimer.reset();
-				if (resetScores) {                               
-					blueScore = 0;                                 
-					redScore = 0;                                 
-					resetScores = false;                               
+				if (resetScores) {
+					blueScore = 0;
+					redScore = 0;
+					resetScores = false;       
 				}
 
 				context1.clearRect(0, 0, canvas1Width, canvas1Height);
@@ -392,7 +346,7 @@ halfArenaHeight, -halfArenaDepth)
 			}
 			if (keyboard.pressed("O")) {
 				gravityOn = false;
-			} 
+			}
 
 			if (joystick) {
 				newDeltaX = joystick.deltaX();
@@ -414,9 +368,7 @@ halfArenaHeight, -halfArenaDepth)
 						if (Math.abs(deltaXDifference) > 0 || Math.abs(deltaYDifference) > 0) {
 							//initial touchmove starts rough, so make sure it is smooth first
 							if (Math.abs(deltaXDifference) < 10 && Math.abs(deltaYDifference) < 10)
-								firstTouchMove = false; //only a small first movement will trigger 
-
-this
+								firstTouchMove = false; //only a small first movement will trigger this
 						}
 					}
 
@@ -474,9 +426,7 @@ this
 						//allow steering
 						ballDirection.x += redPaddleDesiredDirection.x;
 						ballDirection.y += redPaddleDesiredDirection.y;
-						ballDirection.z += (Math.abs(redPaddleDesiredDirection.x) + 
-
-Math.abs(redPaddleDesiredDirection.y));
+						ballDirection.z += (Math.abs(redPaddleDesiredDirection.x) + Math.abs(redPaddleDesiredDirection.y));
 						ballDirection.normalize();
 						//slightly increase ball speed every volley
 						ballSpeed *= 1.03;
@@ -600,26 +550,26 @@ Math.abs(redPaddleDesiredDirection.y));
 
 		function handleMiss(paddle) {
 			if (paddle == bluePaddle) {
-				bluePaddleMissed = true;                         
+				bluePaddleMissed = true;       
 				redScore += 1;
 				context1.clearRect(0, 0, canvas1Width, canvas1Height);
 				context1.fillText(redScore.toString(), 0, canvas1Height - 1);
 				redScoreTexture.needsUpdate = true;
 			}
 			if (paddle == redPaddle) {
-				redPaddleMissed = true;                         
+				redPaddleMissed = true;
 				blueScore += 1;
 				context2.clearRect(0, 0, canvas1Width, canvas1Height);
 				context2.fillText(blueScore.toString(), 0, canvas1Height - 1);
 				blueScoreTexture.needsUpdate = true;
 			}                                  
-			if (redScore > 4) {                       
-				redWins = true;                         
-				resetScores = true;                       
+			if (redScore > 4) {
+				redWins = true;
+				resetScores = true;   
 			}                 
-			if (blueScore > 4) {                       
-				blueWins = true;                         
-				resetScores = true;                       
+			if (blueScore > 4) {
+				blueWins = true;             
+				resetScores = true;        
 			}
 		}
 
