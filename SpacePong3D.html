@@ -550,7 +550,7 @@
 
 		function handleMiss(paddle) {
 			if (paddle == bluePaddle) {
-				bluePaddleMissed = true;       
+				bluePaddleMissed = true;
 				redScore += 1;
 				context1.clearRect(0, 0, canvas1Width, canvas1Height);
 				context1.fillText(redScore.toString(), 0, canvas1Height - 1);
@@ -562,14 +562,14 @@
 				context2.clearRect(0, 0, canvas1Width, canvas1Height);
 				context2.fillText(blueScore.toString(), 0, canvas1Height - 1);
 				blueScoreTexture.needsUpdate = true;
-			}                                  
+			}
 			if (redScore > 4) {
 				redWins = true;
-				resetScores = true;   
-			}                 
+				resetScores = true;
+			}
 			if (blueScore > 4) {
-				blueWins = true;             
-				resetScores = true;        
+				blueWins = true;   
+				resetScores = true;
 			}
 		}
 
