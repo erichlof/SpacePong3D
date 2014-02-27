@@ -12,11 +12,11 @@
 		SpacePong3D
 	</div>
 
-	<div id="help1" style="position:fixed; left:40%; bottom:8%; color:grey;">
-		Desktop: Press 'M' to control paddle with Mouse. Or 'WASD' keys to move paddle
+	<div id="help1" style="position:fixed; left:4%; bottom:8%; color:lightgrey;">
+		Desktop: Press 'M' to control paddle with Mouse. 'G': Gravity ON / 'O': Gravity OFF
 	</div>
 
-	<div id="help2" style="position:fixed; left:40%; bottom:4%; color:grey;">
+	<div id="help2" style="position:fixed; left:4%; bottom:4%; color:lightgrey;">
 		Mobile: Hold finger down and slow Swipe to move paddle
 	</div>
 
@@ -569,7 +569,7 @@ Math.abs(redPaddleDesiredDirection.y));
 			//"Ball Dir Z: " + ballDirection.z.toFixed(1);
 
 			//debugText1.innerHTML = "redScore: " + redScore;
-			//debugText2.innerHTML = "blueScore: " + blueScore;
+			debugText2.innerHTML = "Gravity: " + gravityOn;
 			debugText3.innerHTML = "redWins: " + redWins;
 			debugText4.innerHTML = "blueWins: " + blueWins;
 
