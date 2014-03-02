@@ -3,23 +3,35 @@
 
 <head>
 
-	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<meta name="viewport" content="width=device-width, height=device-height, user-scalable=no">
 	<title>SpacePong3D</title>
 </head>
 
 <body>
-	<div id="help" style="position:fixed; left:48%; top:4%; color:white;">
+	<div id="gametitle" style="position:fixed; left:2%; top:4%; font-family:arial; font-type:bold; color:lightgrey;">
 		SpacePong3D
 	</div>
-
-	<div id="help1" style="position:fixed; left:4%; bottom:8%; color:lightgrey;">
-		Desktop: Press 'M' to control paddle with Mouse. 'G': Gravity ON / 'O': Gravity OFF
+	
+	<div id="gravity" style="position:fixed; left:2%; top:8%; font-family:arial; color:rgb(100,100,100); border:thin solid;">
+		Gravity OFF
 	</div>
 
-	<div id="help2" style="position:fixed; left:4%; bottom:4%; color:lightgrey;">
-		Mobile: Hold finger down and slow Swipe to move paddle
+	<div id="help1" style="position:fixed; left:2%; bottom:8%; font-family:arial; font-size:11px; color:lightgrey;">
+		Desktop: Press 'M' to control paddle with Mouse
 	</div>
 
+	<div id="help2" style="position:fixed; left:2%; bottom:4%; font-family:arial; font-size:11px; color:lightgrey;">
+		Mobile: slow Swipe to control paddle
+	</div>
+	
+	<div id="bluescore" style="position:fixed; right:18%; top:4%; font-family:arial; font-type:bold; color:blue;">
+		0
+	</div>
+	
+	<div id="redscore" style="position:fixed; right:3%; top:4%; font-family:arial; font-type:bold; color:red;">
+		0
+	</div>
+<!--
 	<div id="debug1" style="position:fixed; left:5%; top:4%; color:grey;">
 		Debug Info
 	</div>
@@ -35,7 +47,7 @@
 	<div id="debug4" style="position:fixed; left:5%; top:16%; color:grey;">
 		Debug Info
 	</div>
-
+-->
 	<script src="http://threejs.org/build/three.min.js"></script>
 	<script src="js/threex.texturecube.js"></script>
 	<script src="js/threex.skymap.js"></script>
@@ -48,28 +60,18 @@
 		var halfWindowWidth = windowWidth / 2;
 		var halfWindowHeight = windowHeight / 2;
 		var scene = new THREE.Scene();
-		var sceneOrtho = new THREE.Scene();
 		var camera = new THREE.PerspectiveCamera( 65, windowWidth / windowHeight, 0.1, 2000 );
-		var cameraOrtho = new THREE.OrthographicCamera( -halfWindowWidth, halfWindowWidth, halfWindowHeight, -halfWindowHeight, 1, 10 );
-		cameraOrtho.position.z = 10;
 		var clock = new THREE.Clock();
 		var missedTimer = new THREEx.GameTimer( 3 );
-
 		var keyboard = new THREEx.KeyboardState();
 		var joystick = new VirtualJoystick({
-			mouseSupport: true, // ,
-			hideJoystick: true // ,
-			//stationaryBase: true,
-			//baseX: 400,
-			//baseY: 200,
-			//limitStickTravel: true,
-			//stickRadius: 100
+			mouseSupport: true,
+			hideJoystick: true
 		});
 
 		var renderer = new THREE.WebGLRenderer();
 		renderer.setClearColor( 'rgb(0,0,0)', 1 );
 		renderer.setSize( windowWidth, windowHeight );
-		renderer.autoClear = false; // To allow render overlay on top
 		document.body.appendChild( renderer.domElement );
 		window.addEventListener( 'resize', onWindowResize, false );
 
@@ -119,15 +121,15 @@
 		//var skybox = THREEx.createSkymap( 'skybox' )
 		 //scene.add( skybox );
 		var skyCubeTexture = THREEx.createTextureCube([
-    			'images/skybox/moondust-xpos.png', 'images/skybox/moondust-xneg.png',
-    			'images/skybox/moondust-ypos.png', 'images/skybox/moondust-yneg.png',
-    			'images/skybox/moondust-zpos.png', 'images/skybox/moondust-zneg.png',
+			'images/skybox/moondust-xpos.png', 'images/skybox/moondust-xneg.png',
+			'images/skybox/moondust-ypos.png', 'images/skybox/moondust-yneg.png',
+			'images/skybox/moondust-zpos.png', 'images/skybox/moondust-zneg.png',
 		]);
 		var skyMesh = THREEx.createSkymap({
 			textureCube: skyCubeTexture,
-			cubeW: 5000,
-			cubeH: 400,
-			cubeD: 400
+			cubeW: 2000,
+			cubeH: 300,
+			cubeD: 1000
 		});
 		scene.add( skyMesh );
 		
@@ -222,42 +224,7 @@
 		var disc4 = new THREE.Mesh( discGeometry, discMaterial );
 		scene.add( disc4 );
 
-		// create canvas elements
-		var canvas1Width = 64;
-		var canvas1Height = 64;
-		
-		var canvas1 = document.createElement( 'canvas' );
-		canvas1.width = canvas1Width;
-		canvas1.height = canvas1Height;
-		var context1 = canvas1.getContext( '2d' );
-		
-		var canvas2 = document.createElement( 'canvas' );
-		canvas2.width = canvas1Width;
-		canvas2.height = canvas1Height;
-		var context2 = canvas2.getContext( '2d' );
-
-		context1.font = "bold 60px Arial";
-		context1.fillStyle = "rgba(255,0,0,1.0)";
-		context2.font = "bold 60px Arial";
-		context2.fillStyle = "rgba(0,0,255,1.0)";
-
-		 // canvas contents will be used for a texture
-		var redScoreTexture = new THREE.Texture( canvas1 )
-		 redScoreTexture.needsUpdate = true;
-		var redScoreMaterial = new THREE.SpriteMaterial({
-			map: redScoreTexture
-		});
-		var redScoreSprite = new THREE.Sprite( redScoreMaterial );
-		sceneOrtho.add( redScoreSprite );
-		var blueScoreTexture = new THREE.Texture( canvas2 )
-		 blueScoreTexture.needsUpdate = true;
-		var blueScoreMaterial = new THREE.SpriteMaterial({
-			map: blueScoreTexture
-		});
-		var blueScoreSprite = new THREE.Sprite( blueScoreMaterial );
-		sceneOrtho.add( blueScoreSprite );
-
-		updateHUDSprites();
+		updateHUD();
 
 		camera.position.z = 160;
 
@@ -283,6 +250,10 @@
 		var debugText2 = document.getElementById( "debug2" );
 		var debugText3 = document.getElementById( "debug3" );
 		var debugText4 = document.getElementById( "debug4" );
+		
+		var gravityClicked = false;
+		document.getElementById( "gravity" ).onclick = gravityClickHandler;
+		document.getElementById( "gravity" ).ontouchend = gravityClickHandler;
 
 		animate();
 
@@ -315,15 +286,10 @@
 					redScore = 0;
 					resetScores = false;
 				}
-
-				context1.clearRect( 0, 0, canvas1Width, canvas1Height );
-				context1.fillText( redScore.toString(), 0, canvas1Height - 1 );
-				redScoreTexture.needsUpdate = true;
 				
-				context2.clearRect( 0, 0, canvas1Width, canvas1Height );
-				context2.fillText( blueScore.toString(), 0, canvas1Height - 1 );
-				blueScoreTexture.needsUpdate = true;
-
+				document.getElementById( "bluescore" ).innerHTML = blueScore;
+				document.getElementById( "redscore" ).innerHTML = redScore;
+				
 				gameReset = false;
 				
 			}//end if (gameReset)
@@ -512,19 +478,16 @@
 
 			camera.lookAt( bluePaddle.position );
 			
-			renderer.clear();
 			renderer.render( scene, camera );
-			renderer.clearDepth();
-			renderer.render( sceneOrtho, cameraOrtho );
 
 			//debugText1.innerHTML = "Ball Dir X: " + ballDirection.x.toFixed(1) +
 			//"Ball Dir Y: " + ballDirection.y.toFixed(1) +
 			//"Ball Dir Z: " + ballDirection.z.toFixed(1);
 
 			//debugText1.innerHTML = "redScore: " + redScore;
-			debugText2.innerHTML = "Gravity: " + gravityOn;
-			debugText3.innerHTML = "redWins: " + redWins;
-			debugText4.innerHTML = "blueWins: " + blueWins;
+			//debugText2.innerHTML = "Gravity: " + gravityOn;
+			//debugText3.innerHTML = "redWins: " + redWins;
+			//debugText4.innerHTML = "blueWins: " + blueWins;
 
 		}//end function animate()
 
@@ -560,16 +523,12 @@
 			if (paddle == bluePaddle) {
 				bluePaddleMissed = true;
 				redScore += 1;
-				context1.clearRect( 0, 0, canvas1Width, canvas1Height );
-				context1.fillText( redScore.toString(), 0, canvas1Height - 1 );
-				redScoreTexture.needsUpdate = true;
+				document.getElementById( "redscore" ).innerHTML = redScore;	
 			}
 			if (paddle == redPaddle) {
 				redPaddleMissed = true;
 				blueScore += 1;
-				context2.clearRect( 0, 0, canvas1Width, canvas1Height );
-				context2.fillText( blueScore.toString(), 0, canvas1Height - 1 );
-				blueScoreTexture.needsUpdate = true;
+				document.getElementById( "bluescore" ).innerHTML = blueScore;
 			}
 			if (redScore > 4) {
 				redWins = true;
@@ -582,15 +541,18 @@
 			
 		}
 
-		function updateHUDSprites() {
-
-			var aspectRatio = windowHeight / windowWidth;
-
-			redScoreSprite.scale.set( aspectRatio * windowWidth * 0.1, windowHeight * 0.1, 1 );
-			redScoreSprite.position.set( halfWindowWidth * 0.9, halfWindowHeight * 0.9, 1 );
-
-			blueScoreSprite.scale.set( aspectRatio * windowWidth * 0.1, windowHeight * 0.1, 1 );
-			blueScoreSprite.position.set( halfWindowWidth * 0.65, halfWindowHeight * 0.9, 1 );
+		function updateHUD() {
+			
+			var fontAspect = (windowWidth / 200) * (windowHeight / 200);
+			if(fontAspect > 20) fontAspect = 20;
+			if(fontAspect < 10) fontAspect = 10;
+			document.getElementById( "gametitle" ).style.fontSize = fontAspect + "px";
+			document.getElementById( "gravity" ).style.fontSize = fontAspect + "px";
+			document.getElementById( "gravity" ).style.width = (fontAspect / 2) * 15 + "px";
+			
+			fontAspect *=3;
+			document.getElementById( "bluescore" ).style.fontSize = fontAspect + "px";
+			document.getElementById( "redscore" ).style.fontSize = fontAspect + "px";
 
 		}
 
@@ -598,20 +560,29 @@
 		
 			windowWidth = window.innerWidth;
 			windowHeight = window.innerHeight;
-			halfWindowWidth = windowWidth / 2;
-			halfWindowHeight = windowHeight / 2;
 
 			camera.aspect = windowWidth / windowHeight;
 			camera.updateProjectionMatrix();
 
-			cameraOrtho.left = -halfWindowWidth;
-			cameraOrtho.right = halfWindowWidth;
-			cameraOrtho.top = halfWindowHeight;
-			cameraOrtho.bottom = -halfWindowHeight;
-			cameraOrtho.updateProjectionMatrix();
-
-			updateHUDSprites();
+			updateHUD();
 			renderer.setSize( windowWidth, windowHeight );
+			
+		}
+		
+		function gravityClickHandler(){
+		
+			gravityClicked = !gravityClicked;
+			
+			if(gravityClicked){
+				document.getElementById( "gravity" ).innerHTML = "Gravity ON";
+				document.getElementById( "gravity" ).style.color = "rgb(180,180,180)";
+				gravityOn = true;
+			}
+			if(!gravityClicked){
+ 				document.getElementById( "gravity" ).innerHTML = "Gravity OFF";
+				document.getElementById( "gravity" ).style.color = "rgb(100,100,100)";
+				gravityOn = false;
+			}
 			
 		}
 	</script>
