@@ -2,7 +2,6 @@
 <html>
 
 <head>
-
 	<meta name="viewport" content="width=device-width, height=device-height, user-scalable=no">
 	<title>SpacePong3D</title>
 </head>
@@ -14,6 +13,10 @@
 	
 	<div id="gravity" style="position:fixed; left:2%; top:8%; font-family:arial; color:rgb(100,100,100); border:thin solid;">
 		Gravity OFF
+	</div>
+	
+	<div id="difficulty" style="position:fixed; left:2%; top:13%; font-family:arial; color:rgb(100,100,100); border:thin solid;">
+		Difficulty: MEDIUM
 	</div>
 
 	<div id="help1" style="position:fixed; left:2%; bottom:8%; font-family:arial; font-size:11px; color:lightgrey;">
@@ -31,23 +34,7 @@
 	<div id="redscore" style="position:fixed; right:3%; top:4%; font-family:arial; font-type:bold; color:red;">
 		0
 	</div>
-<!--
-	<div id="debug1" style="position:fixed; left:5%; top:4%; color:grey;">
-		Debug Info
-	</div>
 
-	<div id="debug2" style="position:fixed; left:5%; top:8%; color:grey;">
-		Debug Info
-	</div>
-
-	<div id="debug3" style="position:fixed; left:5%; top:12%; color:grey;">
-		Debug Info
-	</div>
-
-	<div id="debug4" style="position:fixed; left:5%; top:16%; color:grey;">
-		Debug Info
-	</div>
--->
 	<script src="http://threejs.org/build/three.min.js"></script>
 	<script src="js/threex.texturecube.js"></script>
 	<script src="js/threex.skymap.js"></script>
@@ -109,7 +96,6 @@
 		var bluePaddleMissed = false;
 		var redPaddleMissed = false;
 		var redPaddleDesiredDirection = new THREE.Vector3( 0, 0, 0 );
-		var redPaddleMaxSpeed = 120; //difficulty level 50 easy, 100 medium, 150 hard, 200 expert
 		var redPaddleFixedPosZ = 0;
 		var mouseControl = false;
 		var blueScore = 0;
@@ -211,9 +197,9 @@
 
 		var discGeometry = new THREE.ShapeGeometry( circleShape );
 		var discMaterial = new THREE.MeshBasicMaterial({
-			color: 'rgb(100,100,100)' // ,
-			//transparent: true,
-			//opacity: 0.5 //0.4
+			color: 'rgb(100,100,100)',
+			transparent: true,
+			opacity: 0.5 
 		});
 		var disc1 = new THREE.Mesh( discGeometry, discMaterial );
 		scene.add( disc1 );
@@ -254,6 +240,11 @@
 		var gravityClicked = false;
 		document.getElementById( "gravity" ).onclick = gravityClickHandler;
 		document.getElementById( "gravity" ).ontouchend = gravityClickHandler;
+		
+		var difficultyLevel = 1;
+		var redPaddleMaxSpeed = 120;
+		document.getElementById( "difficulty" ).onclick = difficultyClickHandler;
+		document.getElementById( "difficulty" ).ontouchend = difficultyClickHandler;
 
 		animate();
 
@@ -269,8 +260,16 @@
 				ball.position.x = 0;
 				ball.position.y = 0;
 				ball.position.z = 0;
-
-				ballSpeed = 70;
+				
+				if(difficultyLevel == 0)
+					ballSpeed = 60;
+				if(difficultyLevel == 1)
+					ballSpeed = 80;
+				if(difficultyLevel == 2)
+					ballSpeed = 100;
+				if(difficultyLevel == 3)
+					ballSpeed = 130;
+					
 				ballDirection.x = 1 - Math.random() * 2;
 				ballDirection.y = 1 - Math.random() * 2;
 				ballDirection.z = -1.5;
@@ -310,13 +309,7 @@
 			if ( keyboard.pressed("M") ) {
 				mouseControl = true;
 			}
-			if ( keyboard.pressed("G") ) {
-				gravityOn = true;
-			}
-			if ( keyboard.pressed("O") ) {
-				gravityOn = false;
-			}
-
+			
 			if (joystick) {
 			
 				newDeltaX = joystick.deltaX();
@@ -480,14 +473,6 @@
 			
 			renderer.render( scene, camera );
 
-			//debugText1.innerHTML = "Ball Dir X: " + ballDirection.x.toFixed(1) +
-			//"Ball Dir Y: " + ballDirection.y.toFixed(1) +
-			//"Ball Dir Z: " + ballDirection.z.toFixed(1);
-
-			//debugText1.innerHTML = "redScore: " + redScore;
-			//debugText2.innerHTML = "Gravity: " + gravityOn;
-			//debugText3.innerHTML = "redWins: " + redWins;
-			//debugText4.innerHTML = "blueWins: " + blueWins;
 
 		}//end function animate()
 
@@ -546,11 +531,12 @@
 			var fontAspect = (windowWidth / 200) * (windowHeight / 200);
 			if(fontAspect > 20) fontAspect = 20;
 			if(fontAspect < 10) fontAspect = 10;
+			
 			document.getElementById( "gametitle" ).style.fontSize = fontAspect + "px";
 			document.getElementById( "gravity" ).style.fontSize = fontAspect + "px";
-			document.getElementById( "gravity" ).style.width = (fontAspect / 2) * 15 + "px";
+			document.getElementById( "difficulty" ).style.fontSize = fontAspect + "px";
 			
-			fontAspect *=3;
+			fontAspect *= 3;
 			document.getElementById( "bluescore" ).style.fontSize = fontAspect + "px";
 			document.getElementById( "redscore" ).style.fontSize = fontAspect + "px";
 
@@ -583,6 +569,36 @@
 				document.getElementById( "gravity" ).style.color = "rgb(100,100,100)";
 				gravityOn = false;
 			}
+			
+		}
+		
+		function difficultyClickHandler(){
+		
+			difficultyLevel += 1;
+			if(difficultyLevel > 3)
+				difficultyLevel = 0;
+		
+			switch (difficultyLevel){
+				case 0:
+					document.getElementById( "difficulty" ).innerHTML = "Difficulty: EASY";
+					redPaddleMaxSpeed = 80;
+					break;
+				case 1:
+					document.getElementById( "difficulty" ).innerHTML = "Difficulty: MEDIUM";
+					redPaddleMaxSpeed = 120;
+					break;
+				case 2:
+					document.getElementById( "difficulty" ).innerHTML = "Difficulty: HARD";
+					redPaddleMaxSpeed = 170;
+					break;
+				case 3:
+					document.getElementById( "difficulty" ).innerHTML = "Difficulty: EXPERT";
+					redPaddleMaxSpeed = 230;
+					break;
+				default: 
+					document.getElementById( "difficulty" ).innerHTML = "Difficulty: MEDIUM";
+					redPaddleMaxSpeed = 120;
+			}	
 			
 		}
 	</script>
