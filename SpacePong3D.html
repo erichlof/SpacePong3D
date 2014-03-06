@@ -58,7 +58,7 @@
 			hideJoystick: true
 		});
 
-		var renderer = new THREE.WebGLRenderer();
+		var renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setClearColor( 'rgb(0,0,0)', 1 );
 		renderer.setSize( windowWidth, windowHeight );
 		document.body.appendChild( renderer.domElement );
