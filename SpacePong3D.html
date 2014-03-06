@@ -41,6 +41,8 @@
 	<script src="js/threex.keyboardstate.js"></script>
 	<script src="js/virtualjoystick.js"></script>
 	<script src="js/threex.GameTimer.js"></script>
+	<script src="js/threex.geometricglowmesh.js"></script>
+	
 	<script>
 		var windowWidth = window.innerWidth;
 		var windowHeight = window.innerHeight;
@@ -158,33 +160,71 @@
 
 		 //blue paddle
 		var boxGeometry = new THREE.BoxGeometry( paddleWidth, paddleHeight, paddleDepth );
-		var boxMaterial = new THREE.MeshBasicMaterial({
-			color: 'rgb(0,0,255)',
-			transparent: true,
-			opacity: 0.5
-		});
+		var boxMaterial = new THREE.MeshBasicMaterial();
 		var bluePaddle = new THREE.Mesh( boxGeometry, boxMaterial );
 		scene.add( bluePaddle );
+		bluePaddle.visible = false;
+		
+		var blueGlow = new THREEx.GeometricGlowMesh( bluePaddle );
+		blueGlow.outsideMesh.scale.set( 1.08, 1.08, 1 );
+		bluePaddle.add( blueGlow.object3d );
+		
+		var blueInsideUniforms = blueGlow.insideMesh.material.uniforms;
+		var blueOutsideUniforms = blueGlow.outsideMesh.material.uniforms;
+		blueInsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(0,0,255)' ) );
+		blueOutsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(0,0,50)' ) );
+		var blueInsideCoef = 1.2;
+		
+		//var insideFlag = true;
+		blueInsideUniforms.coeficient.value = blueInsideCoef;//range 0 - 2
+		blueInsideUniforms.power.value = 0.8;//range 0 - 5
+		blueOutsideUniforms.coeficient.value = 1.1;//range 0 - 2
+		blueOutsideUniforms.power.value = 0.8;//range 0 - 5
 
 		 //red paddle
 		var boxGeometry = new THREE.BoxGeometry( paddleWidth, paddleHeight, paddleDepth );
-		var boxMaterial = new THREE.MeshBasicMaterial({
-			color: 'rgb(255,0,0)',
-			transparent: true,
-			opacity: 0.5
-		});
+		var boxMaterial = new THREE.MeshBasicMaterial();
 		var redPaddle = new THREE.Mesh( boxGeometry, boxMaterial );
 		scene.add( redPaddle );
-	
+		redPaddle.visible = false;
+		
+		var redGlow = new THREEx.GeometricGlowMesh( redPaddle );
+		redGlow.outsideMesh.scale.set( 1.08, 1.08, 1 );
+		redPaddle.add( redGlow.object3d );
+		
+		var redInsideUniforms = redGlow.insideMesh.material.uniforms;
+		var redOutsideUniforms = redGlow.outsideMesh.material.uniforms;
+		redInsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(255,0,0)' ) );
+		redOutsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(50,0,0)' ) );
+		var redInsideCoef = 1.2;
+		
+		redInsideUniforms.coeficient.value = redInsideCoef;//range 0 - 2
+		redInsideUniforms.power.value = 0.8;//range 0 - 5
+		redOutsideUniforms.coeficient.value = 1.1;//range 0 - 2
+		redOutsideUniforms.power.value = 0.8;//range 0 - 5
+		
 		 //ball
-		var sphereGeometry = new THREE.SphereGeometry( ballRadius );
-		var sphereMaterial = new THREE.MeshBasicMaterial({
-			color: 'rgb(255,255,255)',
-			transparent: true,
-			opacity: 0.7
-		});
+		var sphereGeometry = new THREE.SphereGeometry( ballRadius, 8, 8 );
+		var sphereMaterial = new THREE.MeshBasicMaterial();
 		var ball = new THREE.Mesh( sphereGeometry, sphereMaterial );
 		scene.add( ball );
+		ball.visible = false;
+		
+		var ballGlow = new THREEx.GeometricGlowMesh( ball );
+		ballGlow.outsideMesh.scale.set( 1.2, 1.2, 1.2 );
+		ball.add( ballGlow.object3d );
+		
+		var ballInsideUniforms = ballGlow.insideMesh.material.uniforms;
+		var ballOutsideUniforms = ballGlow.outsideMesh.material.uniforms;
+		ballInsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(255,255,255)' ) );
+		ballOutsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(35,35,35)' ) );
+		var ballInsideCoef = 1.1;
+
+		ballInsideUniforms.coeficient.value = ballInsideCoef;//range 0 - 2
+		ballInsideUniforms.power.value = 0.8;//range 0 - 5
+		ballOutsideUniforms.coeficient.value = 1.1;//range 0 - 2
+		ballOutsideUniforms.power.value = 0.8;//range 0 - 5
+		var ballGlowFlag = false;
 
 		 // Circle
 		var circleRadius = ballRadius;
@@ -387,6 +427,8 @@
 						ballDirection.normalize();
 						//slightly increase ball speed every volley
 						ballSpeed *= 1.03;
+						ballGlowFlag = true;
+						ballInsideCoef = 2.2;
 					} else {
 						handleMiss( redPaddle );
 					}
@@ -405,6 +447,8 @@
 						ballDirection.normalize();
 						//slightly increase ball speed every volley
 						ballSpeed *= 1.03;
+						ballGlowFlag = true;
+						ballInsideCoef = 2.2;
 					} else {
 						handleMiss( bluePaddle );
 					}
@@ -414,56 +458,105 @@
 					ball.position.x = -halfArenaWidth + ballRadius;
 					ballDirection.reflect( leftTriangleNormal );
 					ballDirection.normalize();
+					ballGlowFlag = true;
+					ballInsideCoef = 2.2;
 				}
 				//right wall
 				if ( (ball.position.x + ballRadius) > halfArenaWidth ) {
 					ball.position.x = halfArenaWidth - ballRadius;
 					ballDirection.reflect( rightTriangleNormal );
 					ballDirection.normalize();
+					ballGlowFlag = true;
+					ballInsideCoef = 2.2;
 				}
 				//bottom wall
 				if ( (ball.position.y - ballRadius) < -halfArenaHeight ) {
 					ball.position.y = -halfArenaHeight + ballRadius;
 					ballDirection.reflect( bottomTriangleNormal );
 					ballDirection.normalize();
+					ballGlowFlag = true;
+					ballInsideCoef = 2.2;
 				}
 				//top wall
 				if ( (ball.position.y + ballRadius) > halfArenaHeight ) {
 					ball.position.y = halfArenaHeight - ballRadius;
 					ballDirection.reflect( topTriangleNormal );
 					ballDirection.normalize();
+					ballGlowFlag = true;
+					ballInsideCoef = 2.2;
 				}
 				
 			} //end if (bluePaddleMissed == false && redPaddleMissed == false)
 
 			if (ball.position.x > 0) {
+				disc1.visible = true;
 				disc1.position.set( halfArenaWidth, ball.position.y, ball.position.z );
-				disc2.position.set( 1000, 1000, 1000 );
+				disc2.visible = false;
 			}
 			if (ball.position.x < 0) {
+				disc2.visible = true;
 				disc2.position.set( -halfArenaWidth, ball.position.y, ball.position.z );
-				disc1.position.set( 1000, 1000, 1000 );
+				disc1.visible = false;
 			}
 			if (ball.position.y > 0) {
+				disc3.visible = true;
 				disc3.position.set( ball.position.x, halfArenaHeight, ball.position.z );
-				disc4.position.set( 1000, 1000, 1000 );
+				disc4.visible = false;
 			}
 			if (ball.position.y < 0) {
+				disc4.visible = true;
 				disc4.position.set( ball.position.x, -halfArenaHeight, ball.position.z );
-				disc3.position.set( 1000, 1000, 1000 );
+				disc3.visible = false;
 			}
 			if (bluePaddleMissed || redPaddleMissed) {
-				disc1.position.set( 1000, 1000, 1000 );
-				disc2.position.set( 1000, 1000, 1000 );
-				disc3.position.set( 1000, 1000, 1000 );
-				disc4.position.set( 1000, 1000, 1000 );
+
+				disc1.visible = false;
+				disc2.visible = false;
+				disc3.visible = false;
+				disc4.visible = false;
 
 				missedTimer.run( frameTime );
 
 				if (missedTimer.alarmSounding)
 					gameReset = true;
 			}
+			/*
+                  	if (insideFlag == false){
+                  		insideCoef -= 1 * frameTime;
+                  		if (insideCoef < 0.2){
+                  			insideCoef = 0.2;
+                  			insideFlag = true;
+                  		}
+                  	}
 
+			if (insideFlag == true){
+                  		insideCoef += 1 * frameTime;
+                  		if (insideCoef > 1.9){
+                  			insideCoef = 1.9;
+                  			insideFlag = false;
+                  		}
+                  	}
+                  */	
+                  	blueInsideCoef = 1 / bluePaddle.position.distanceTo(ball.position) * 70;
+			if (blueInsideCoef < 1.15) blueInsideCoef = 1.15;
+			if (blueInsideCoef > 3) blueInsideCoef = 3;
+			blueInsideUniforms.coeficient.value = blueInsideCoef;
+			
+			redInsideCoef = 1 / redPaddle.position.distanceTo(ball.position) * 70;
+			if (redInsideCoef < 1.15) redInsideCoef = 1.15;
+			if (redInsideCoef > 3) redInsideCoef = 3;
+			redInsideUniforms.coeficient.value = redInsideCoef;
+			
+			if (ballGlowFlag){
+				ballInsideCoef -= 4.5 * frameTime;
+				if (ballInsideCoef < 1.1){
+					ballInsideCoef = 1.1;
+					ballGlowFlag = false;
+				}
+			}
+			
+			ballInsideUniforms.coeficient.value = ballInsideCoef;
+			
 			camera.lookAt( bluePaddle.position );
 			
 			renderer.render( scene, camera );
