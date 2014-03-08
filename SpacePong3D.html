@@ -34,7 +34,12 @@
 	<div id="redscore" style="position:fixed; right:3%; top:4%; font-family:arial; font-type:bold; color:red;">
 		0
 	</div>
-
+	
+	<div id="winner" style="position:fixed; left:40%; top:20%; font-family:arial; font-type:bold; color:black;">
+	
+	</div>
+	
+	
 	<script src="http://threejs.org/build/three.min.js"></script>
 	<script src="js/threex.texturecube.js"></script>
 	<script src="js/threex.skymap.js"></script>
@@ -42,6 +47,7 @@
 	<script src="js/virtualjoystick.js"></script>
 	<script src="js/threex.GameTimer.js"></script>
 	<script src="js/threex.geometricglowmesh.js"></script>
+	<script src="js/webaudioxGameSounds.js"></script>
 	
 	<script>
 		var windowWidth = window.innerWidth;
@@ -52,13 +58,14 @@
 		var camera = new THREE.PerspectiveCamera( 65, windowWidth / windowHeight, 0.1, 2000 );
 		var clock = new THREE.Clock();
 		var missedTimer = new THREEx.GameTimer( 3 );
+		var cutSceneTimer = new THREEx.GameTimer( 6 );
 		var keyboard = new THREEx.KeyboardState();
 		var joystick = new VirtualJoystick({
 			mouseSupport: true,
 			hideJoystick: true
 		});
 
-		var renderer = new THREE.WebGLRenderer({ antialias: true });
+		var renderer = new THREE.WebGLRenderer({ antialias:true });
 		renderer.setClearColor( 'rgb(0,0,0)', 1 );
 		renderer.setSize( windowWidth, windowHeight );
 		document.body.appendChild( renderer.domElement );
@@ -105,6 +112,8 @@
 		var resetScores = true;
 		var blueWins = false;
 		var redWins = false;
+		var winnerCutScene = false;
+		var cameraAngle = 0;
 		
 		//var skybox = THREEx.createSkymap( 'skybox' )
 		 //scene.add( skybox );
@@ -155,9 +164,10 @@
 		var lineMaterial = new THREE.LineBasicMaterial({
 			color: 'rgb(0,255,0)'
 		});
-		var line = new THREE.Line( lineGeometry, lineMaterial, THREE.LinePieces );
-		scene.add( line );
-
+		var lineArena = new THREE.Line( lineGeometry, lineMaterial, THREE.LinePieces );
+		scene.add( lineArena );
+		//lineArena.visible = false;
+		
 		 //blue paddle
 		var boxGeometry = new THREE.BoxGeometry( paddleWidth, paddleHeight, paddleDepth );
 		var boxMaterial = new THREE.MeshBasicMaterial();
@@ -204,7 +214,7 @@
 		redOutsideUniforms.power.value = 0.8;//range 0 - 5
 		
 		 //ball
-		var sphereGeometry = new THREE.SphereGeometry( ballRadius, 8, 8 );
+		var sphereGeometry = new THREE.SphereGeometry( ballRadius, 10, 10 );
 		var sphereMaterial = new THREE.MeshBasicMaterial();
 		var ball = new THREE.Mesh( sphereGeometry, sphereMaterial );
 		scene.add( ball );
@@ -277,10 +287,36 @@
 		document.getElementById( "gravity" ).ontouchend = gravityClickHandler;
 		
 		var difficultyLevel = 1;
-		var redPaddleMaxSpeed = 120;
+		var redPaddleMaxSpeed = 110;
 		document.getElementById( "difficulty" ).onclick = difficultyClickHandler;
 		document.getElementById( "difficulty" ).ontouchend = difficultyClickHandler;
-
+		
+		var gameSounds  = new WebAudiox.GameSounds();
+		gameSounds.lineOut.volume = 1;
+		gameSounds.listenerFollow( camera );
+		
+		var bounceSoundUrl	= 'sounds/mediumPing.mp3';
+		var paddleHitSoundUrl	= 'sounds/lowPing.mp3';
+		var paddleMissSoundUrl	= 'sounds/paddleMiss.mp3';
+		var paddleWinSoundUrl	= 'sounds/winner.mp3';
+		var winCutSceneSoundUrl	= 'sounds/synthHit.mp3';
+		
+		var bounceSound = new WebAudiox.GameSound( gameSounds );
+		bounceSound.load( bounceSoundUrl );
+		//bounceSound.register('ballSounds');
+		var paddleHitSound = new WebAudiox.GameSound( gameSounds );
+		paddleHitSound.load( paddleHitSoundUrl );
+		//paddleHitSound.register('ballSounds');
+		var paddleMissSound = new WebAudiox.GameSound( gameSounds );
+		paddleMissSound.load( paddleMissSoundUrl );
+		//paddleMissSound.register('ballSounds');
+		var paddleWinSound = new WebAudiox.GameSound( gameSounds );
+		paddleWinSound.load( paddleWinSoundUrl );
+		//paddleWinSound.register('ballSounds');
+		var winCutSceneSound = new WebAudiox.GameSound( gameSounds );
+		winCutSceneSound.load( winCutSceneSoundUrl );
+		//paddleWinSound.register('ballSounds');
+		
 		animate();
 
 
@@ -289,15 +325,43 @@
 			requestAnimationFrame( animate );
 
 			frameTime = clock.getDelta();
+			
+			gameSounds.update( frameTime );
+			
+			if (winnerCutScene){
+			
+				cameraAngle += 1.2 * frameTime;
+				
+				if(blueWins){
+					camera.lookAt( bluePaddle.position );
+					camera.position.x = bluePaddle.position.x + Math.sin(cameraAngle) * 50;
+					camera.position.z = bluePaddle.position.z + Math.cos(cameraAngle) * 50;
+				}	
+				if(redWins){
+					camera.lookAt( redPaddle.position );
+					camera.position.x = redPaddle.position.x + Math.sin(cameraAngle) * 50;
+					camera.position.z = redPaddle.position.z + Math.cos(cameraAngle) * 50;
+				}
+				camera.position.y = -30;
+				
+				cutSceneTimer.run( frameTime );
+				
+				if(cutSceneTimer.alarmSounding){
+					gameReset = true;
+					resetScores = true;
+					cutSceneTimer.reset();
+					winnerCutScene = false;
+				}
+				
+			}
 
 			if (gameReset) {
-			
-				ball.position.x = 0;
-				ball.position.y = 0;
-				ball.position.z = 0;
+				cameraAngle = 0;
+				camera.position.set( 0, 0, 160 );
+				ball.position.set( 0, 0, 0 );
 				
 				if(difficultyLevel == 0)
-					ballSpeed = 60;
+					ballSpeed = 70;
 				if(difficultyLevel == 1)
 					ballSpeed = 80;
 				if(difficultyLevel == 2)
@@ -324,71 +388,223 @@
 				document.getElementById( "bluescore" ).innerHTML = blueScore;
 				document.getElementById( "redscore" ).innerHTML = redScore;
 				
+				document.getElementById( "winner" ).innerHTML = "";
+				
 				gameReset = false;
 				
 			}//end if (gameReset)
 
-			if ( keyboard.pressed("D") ) {
-				bluePaddle.position.x += 50 * frameTime;
-			}
-			if ( keyboard.pressed("A") ) {
-				bluePaddle.position.x -= 50 * frameTime;
-			}
-			if ( keyboard.pressed("W") ) {
-				bluePaddle.position.y += 50 * frameTime;
-			}
-			if ( keyboard.pressed("S") ) {
-				bluePaddle.position.y -= 50 * frameTime;
-			}
-
-			if ( keyboard.pressed("M") ) {
-				mouseControl = true;
-			}
+			if(winnerCutScene == false){
 			
-			if (joystick) {
-			
-				newDeltaX = joystick.deltaX();
-				newDeltaY = joystick.deltaY();
-
-				deltaXDifference = newDeltaX - oldDeltaX;
-				deltaYDifference = newDeltaY - oldDeltaY;
-
-
-				if (mouseControl) joystick._pressed = true;
-
-				if (joystick._pressed) {
-
-					if (firstTouchMove == false) {
-						bluePaddle.position.x += ( deltaXDifference / joystickDampening );
-						bluePaddle.position.y -= ( deltaYDifference / joystickDampening );
-					} else if (firstTouchMove == true) {
-						//did the player swipe yet?
-						if (Math.abs(deltaXDifference) > 0 || Math.abs(deltaYDifference) > 0) {
-							//initial touchmove starts rough, so make sure it is smooth first
-							if (Math.abs(deltaXDifference) < 10 && Math.abs(deltaYDifference) < 10)
-								firstTouchMove = false; //only a small first movement will trigger this
-						}
-					}
-
-				} else { //joystick not pressed
-					//reset firstTouchMove
-					firstTouchMove = true;
+				if ( keyboard.pressed("D") ) {
+					bluePaddle.position.x += 50 * frameTime;
+				}
+				if ( keyboard.pressed("A") ) {
+					bluePaddle.position.x -= 50 * frameTime;
+				}
+				if ( keyboard.pressed("W") ) {
+					bluePaddle.position.y += 50 * frameTime;
+				}
+				if ( keyboard.pressed("S") ) {
+					bluePaddle.position.y -= 50 * frameTime;
 				}
 
-				oldDeltaX = newDeltaX;
-				oldDeltaY = newDeltaY;
+				if ( keyboard.pressed("M") ) {
+					mouseControl = true;
+				}
+			
+				if (joystick) {
+			
+					newDeltaX = joystick.deltaX();
+					newDeltaY = joystick.deltaY();
 
-			} //end if(joystick)
+					deltaXDifference = newDeltaX - oldDeltaX;
+					deltaYDifference = newDeltaY - oldDeltaY;
 
+
+					if (mouseControl) joystick._pressed = true;
+
+					if (joystick._pressed) {
+
+						if (firstTouchMove == false) {
+							bluePaddle.position.x += ( deltaXDifference / joystickDampening );
+							bluePaddle.position.y -= ( deltaYDifference / joystickDampening );
+						} else if (firstTouchMove == true) {
+							//did the player swipe yet?
+							if (Math.abs(deltaXDifference) > 0 || Math.abs(deltaYDifference) > 0) {
+								//initial touchmove starts rough, so make sure it is smooth first
+								if (Math.abs(deltaXDifference) < 10 && Math.abs(deltaYDifference) < 10)
+									firstTouchMove = false; //only a small first movement will trigger this
+							}
+						}
+
+					} else { //joystick not pressed
+						//reset firstTouchMove
+						firstTouchMove = true;
+					}
+
+					oldDeltaX = newDeltaX;
+					oldDeltaY = newDeltaY;
+
+				} //end if(joystick)
+			
+			}//end if(winnerCutScene == false)
+			
 			//gravity effect
 			if (gravityOn)
 				ballDirection.y -= 0.3 * frameTime;
 
 			ball.translateOnAxis( ballDirection, ballSpeed * frameTime );
+				
+			
 
-			if (bluePaddleMissed == false && redPaddleMissed == false)
+
+			if (bluePaddleMissed == false && redPaddleMissed == false && winnerCutScene == false) {
+				
 				updateAI();
+				//back wall Red Paddle
+				if ( (ball.position.z - ballRadius) < redPaddle.position.z ) {
+					ball.position.z = redPaddle.position.z + ballRadius;
 
+					collisionResult = checkBallPaddleCollision( ball.position, redPaddle.position );
+					if (collisionResult === true) {
+						paddleHitSound.play({ volume: 0.1 });
+						ballDirection.reflect( backTriangleNormal );
+						//allow steering
+						ballDirection.x += redPaddleDesiredDirection.x;
+						ballDirection.y += redPaddleDesiredDirection.y;
+						ballDirection.z += ( Math.abs(redPaddleDesiredDirection.x) + Math.abs(redPaddleDesiredDirection.y) );
+						ballDirection.normalize();
+						//slightly increase ball speed every volley
+						ballSpeed *= 1.03;
+						ballGlowFlag = true;
+						ballInsideCoef = 2.2;
+					} else {
+						paddleMissSound.play({ volume: 0.3 });
+						handleMiss( redPaddle );
+					}
+				}
+				//front wall Blue Paddle
+				if ( (ball.position.z + ballRadius) > bluePaddle.position.z ) {
+					ball.position.z = bluePaddle.position.z - ballRadius;
+
+					collisionResult = checkBallPaddleCollision( ball.position, bluePaddle.position );
+					if (collisionResult === true) {
+						paddleHitSound.play({ volume: 0.5 });
+						ballDirection.reflect( frontTriangleNormal );
+						//allow steering
+						ballDirection.x += deltaXDifference;
+						ballDirection.y -= deltaYDifference;
+						ballDirection.z -= ( Math.abs(deltaXDifference) + Math.abs(deltaYDifference) );
+						ballDirection.normalize();
+						//slightly increase ball speed every volley
+						ballSpeed *= 1.03;
+						ballGlowFlag = true;
+						ballInsideCoef = 2.2;
+					} else {
+						paddleMissSound.play({ volume: 0.4 });
+						handleMiss( bluePaddle );
+					}
+				}
+				//left wall
+				if ( (ball.position.x - ballRadius) < -halfArenaWidth ) {
+					bounceSound.play({ follow:ball });
+					ball.position.x = -halfArenaWidth + ballRadius;
+					ballDirection.reflect( leftTriangleNormal );
+					ballDirection.normalize();
+					ballGlowFlag = true;
+					ballInsideCoef = 2.2;
+				}
+				//right wall
+				if ( (ball.position.x + ballRadius) > halfArenaWidth ) {
+					bounceSound.play({ follow:ball });
+					ball.position.x = halfArenaWidth - ballRadius;
+					ballDirection.reflect( rightTriangleNormal );
+					ballDirection.normalize();
+					ballGlowFlag = true;
+					ballInsideCoef = 2.2;
+				}
+				//bottom wall
+				if ( (ball.position.y - ballRadius) < -halfArenaHeight ) {
+					bounceSound.play({ follow:ball });
+					ball.position.y = -halfArenaHeight + ballRadius;
+					ballDirection.reflect( bottomTriangleNormal );
+					ballDirection.normalize();
+					ballGlowFlag = true;
+					ballInsideCoef = 2.2;
+				}
+				//top wall
+				if ( (ball.position.y + ballRadius) > halfArenaHeight ) {
+					bounceSound.play({ follow:ball });
+					ball.position.y = halfArenaHeight - ballRadius;
+					ballDirection.reflect( topTriangleNormal );
+					ballDirection.normalize();
+					ballGlowFlag = true;
+					ballInsideCoef = 2.2;
+				}
+				
+			
+
+				if (ball.position.x > 0) {
+					disc1.visible = true;
+					disc1.position.set( halfArenaWidth, ball.position.y, ball.position.z );
+					disc2.visible = false;
+				}
+				if (ball.position.x < 0) {
+					disc2.visible = true;
+					disc2.position.set( -halfArenaWidth, ball.position.y, ball.position.z );
+					disc1.visible = false;
+				}
+				if (ball.position.y > 0) {
+					disc3.visible = true;
+					disc3.position.set( ball.position.x, halfArenaHeight, ball.position.z );
+					disc4.visible = false;
+				}
+				if (ball.position.y < 0) {
+					disc4.visible = true;
+					disc4.position.set( ball.position.x, -halfArenaHeight, ball.position.z );
+					disc3.visible = false;
+				}
+						
+				
+			} //end if (bluePaddleMissed == false && redPaddleMissed == false && winnerCutScene == false)
+			
+			if (bluePaddleMissed || redPaddleMissed) {
+
+					disc1.visible = false;
+					disc2.visible = false;
+					disc3.visible = false;
+					disc4.visible = false;
+
+					missedTimer.run( frameTime );
+
+					if (missedTimer.alarmSounding){
+				
+						if(blueWins || redWins){
+							paddleWinSound.play({ volume: 0.1 });
+							winCutSceneSound.play({ volume: 0.1 });
+							camera.position.set(0,100,0);
+							bluePaddleMissed = false;
+							redPaddleMissed = false;
+							winnerCutScene = true;
+							
+							if(blueWins){
+								document.getElementById( "winner" ).style.color = "rgb(0,0,255)";
+							}
+							if(redWins){	
+								document.getElementById( "winner" ).style.color = "rgb(255,0,0)";
+							}
+							
+							document.getElementById( "winner" ).innerHTML = "WINNER!";
+						}
+						else{
+							gameReset = true;
+						}
+						
+					}
+					
+			}//end if(bluePaddleMissed || redPaddleMissed)
+			
 			//keep players inside arena
 			if (bluePaddle.position.x > rightWall)
 				bluePaddle.position.x = rightWall;
@@ -407,137 +623,26 @@
 				redPaddle.position.y = topWall;
 			if (redPaddle.position.y < bottomWall)
 				redPaddle.position.y = bottomWall;
-
-
-
-
-
-			if (bluePaddleMissed == false && redPaddleMissed == false) {
-				//back wall Red Paddle
-				if ( (ball.position.z - ballRadius) < redPaddle.position.z ) {
-					ball.position.z = redPaddle.position.z + ballRadius;
-
-					collisionResult = checkBallPaddleCollision( ball.position, redPaddle.position );
-					if (collisionResult === true) {
-						ballDirection.reflect( backTriangleNormal );
-						//allow steering
-						ballDirection.x += redPaddleDesiredDirection.x;
-						ballDirection.y += redPaddleDesiredDirection.y;
-						ballDirection.z += ( Math.abs(redPaddleDesiredDirection.x) + Math.abs(redPaddleDesiredDirection.y) );
-						ballDirection.normalize();
-						//slightly increase ball speed every volley
-						ballSpeed *= 1.03;
-						ballGlowFlag = true;
-						ballInsideCoef = 2.2;
-					} else {
-						handleMiss( redPaddle );
-					}
-				}
-				//front wall Blue Paddle
-				if ( (ball.position.z + ballRadius) > bluePaddle.position.z ) {
-					ball.position.z = bluePaddle.position.z - ballRadius;
-
-					collisionResult = checkBallPaddleCollision( ball.position, bluePaddle.position );
-					if (collisionResult === true) {
-						ballDirection.reflect( frontTriangleNormal );
-						//allow steering
-						ballDirection.x += deltaXDifference;
-						ballDirection.y -= deltaYDifference;
-						ballDirection.z -= ( Math.abs(deltaXDifference) + Math.abs(deltaYDifference) );
-						ballDirection.normalize();
-						//slightly increase ball speed every volley
-						ballSpeed *= 1.03;
-						ballGlowFlag = true;
-						ballInsideCoef = 2.2;
-					} else {
-						handleMiss( bluePaddle );
-					}
-				}
-				//left wall
-				if ( (ball.position.x - ballRadius) < -halfArenaWidth ) {
-					ball.position.x = -halfArenaWidth + ballRadius;
-					ballDirection.reflect( leftTriangleNormal );
-					ballDirection.normalize();
-					ballGlowFlag = true;
-					ballInsideCoef = 2.2;
-				}
-				//right wall
-				if ( (ball.position.x + ballRadius) > halfArenaWidth ) {
-					ball.position.x = halfArenaWidth - ballRadius;
-					ballDirection.reflect( rightTriangleNormal );
-					ballDirection.normalize();
-					ballGlowFlag = true;
-					ballInsideCoef = 2.2;
-				}
-				//bottom wall
-				if ( (ball.position.y - ballRadius) < -halfArenaHeight ) {
-					ball.position.y = -halfArenaHeight + ballRadius;
-					ballDirection.reflect( bottomTriangleNormal );
-					ballDirection.normalize();
-					ballGlowFlag = true;
-					ballInsideCoef = 2.2;
-				}
-				//top wall
-				if ( (ball.position.y + ballRadius) > halfArenaHeight ) {
-					ball.position.y = halfArenaHeight - ballRadius;
-					ballDirection.reflect( topTriangleNormal );
-					ballDirection.normalize();
-					ballGlowFlag = true;
-					ballInsideCoef = 2.2;
-				}
 				
-			} //end if (bluePaddleMissed == false && redPaddleMissed == false)
-
-			if (ball.position.x > 0) {
-				disc1.visible = true;
-				disc1.position.set( halfArenaWidth, ball.position.y, ball.position.z );
-				disc2.visible = false;
-			}
-			if (ball.position.x < 0) {
-				disc2.visible = true;
-				disc2.position.set( -halfArenaWidth, ball.position.y, ball.position.z );
-				disc1.visible = false;
-			}
-			if (ball.position.y > 0) {
-				disc3.visible = true;
-				disc3.position.set( ball.position.x, halfArenaHeight, ball.position.z );
-				disc4.visible = false;
-			}
-			if (ball.position.y < 0) {
-				disc4.visible = true;
-				disc4.position.set( ball.position.x, -halfArenaHeight, ball.position.z );
-				disc3.visible = false;
-			}
-			if (bluePaddleMissed || redPaddleMissed) {
-
-				disc1.visible = false;
-				disc2.visible = false;
-				disc3.visible = false;
-				disc4.visible = false;
-
-				missedTimer.run( frameTime );
-
-				if (missedTimer.alarmSounding)
-					gameReset = true;
-			}
 			/*
-                  	if (insideFlag == false){
-                  		insideCoef -= 1 * frameTime;
-                  		if (insideCoef < 0.2){
-                  			insideCoef = 0.2;
-                  			insideFlag = true;
-                  		}
-                  	}
+			if (insideFlag == false){
+				insideCoef -= 1 * frameTime;
+				if (insideCoef < 0.2){
+					insideCoef = 0.2;
+					insideFlag = true;
+				}
+			}
 
 			if (insideFlag == true){
-                  		insideCoef += 1 * frameTime;
-                  		if (insideCoef > 1.9){
-                  			insideCoef = 1.9;
-                  			insideFlag = false;
-                  		}
-                  	}
-                  */	
-                  	blueInsideCoef = 1 / bluePaddle.position.distanceTo(ball.position) * 70;
+				insideCoef += 1 * frameTime;
+				if (insideCoef > 1.9){
+					insideCoef = 1.9;
+					insideFlag = false;
+				}
+			}
+			*/
+			
+			blueInsideCoef = 1 / bluePaddle.position.distanceTo(ball.position) * 70;
 			if (blueInsideCoef < 1.15) blueInsideCoef = 1.15;
 			if (blueInsideCoef > 3) blueInsideCoef = 3;
 			blueInsideUniforms.coeficient.value = blueInsideCoef;
@@ -557,7 +662,8 @@
 			
 			ballInsideUniforms.coeficient.value = ballInsideCoef;
 			
-			camera.lookAt( bluePaddle.position );
+			if(winnerCutScene == false)
+				camera.lookAt( bluePaddle.position );
 			
 			renderer.render( scene, camera );
 
@@ -605,11 +711,11 @@
 			}
 			if (redScore > 4) {
 				redWins = true;
-				resetScores = true;
+				//resetScores = true;
 			}
 			if (blueScore > 4) {
 				blueWins = true;
-				resetScores = true;
+				//resetScores = true;
 			}
 			
 		}
@@ -627,6 +733,8 @@
 			fontAspect *= 3;
 			document.getElementById( "bluescore" ).style.fontSize = fontAspect + "px";
 			document.getElementById( "redscore" ).style.fontSize = fontAspect + "px";
+			
+			document.getElementById( "winner" ).style.fontSize = fontAspect + "px";
 
 		}
 
@@ -669,11 +777,11 @@
 			switch (difficultyLevel){
 				case 0:
 					document.getElementById( "difficulty" ).innerHTML = "Difficulty: EASY";
-					redPaddleMaxSpeed = 80;
+					redPaddleMaxSpeed = 70;
 					break;
 				case 1:
 					document.getElementById( "difficulty" ).innerHTML = "Difficulty: MEDIUM";
-					redPaddleMaxSpeed = 120;
+					redPaddleMaxSpeed = 110;
 					break;
 				case 2:
 					document.getElementById( "difficulty" ).innerHTML = "Difficulty: HARD";
@@ -685,7 +793,7 @@
 					break;
 				default: 
 					document.getElementById( "difficulty" ).innerHTML = "Difficulty: MEDIUM";
-					redPaddleMaxSpeed = 120;
+					redPaddleMaxSpeed = 110;
 			}	
 			
 		}
