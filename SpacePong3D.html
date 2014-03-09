@@ -106,6 +106,7 @@
 		var redPaddleMissed = false;
 		var redPaddleDesiredDirection = new THREE.Vector3( 0, 0, 0 );
 		var redPaddleFixedPosZ = 0;
+		var bluePaddleFixedPosZ = 0;
 		var mouseControl = false;
 		var blueScore = 0;
 		var redScore = 0;
@@ -266,7 +267,8 @@
 
 		bluePaddle.position.x = 0.0;
 		bluePaddle.position.y = 0.0;
-		bluePaddle.position.z = arenaDepth / 2 + paddleDepth;
+		bluePaddleFixedPosZ = arenaDepth / 2 + paddleDepth;
+		bluePaddle.position.z = bluePaddleFixedPosZ;
 
 		redPaddle.position.x = 0.0;
 		redPaddle.position.y = 0.0;
@@ -292,7 +294,7 @@
 		document.getElementById( "difficulty" ).ontouchend = difficultyClickHandler;
 		
 		var gameSounds  = new WebAudiox.GameSounds();
-		gameSounds.lineOut.volume = 1;
+		gameSounds.lineOut.volume = 1.0;
 		gameSounds.listenerFollow( camera );
 		
 		var bounceSoundUrl	= 'sounds/mediumPing.mp3';
@@ -330,7 +332,16 @@
 			
 			if (winnerCutScene){
 			
-				cameraAngle += 1.2 * frameTime;
+				cameraAngle += frameTime;
+				//cameraAngle += 0.01;
+				
+				bluePaddle.position.x = 0.0;
+				bluePaddle.position.y = 0.0;
+				bluePaddle.position.z = bluePaddleFixedPosZ;
+
+				redPaddle.position.x = 0.0;
+				redPaddle.position.y = 0.0;
+				redPaddle.position.z = redPaddleFixedPosZ;
 				
 				if(blueWins){
 					camera.lookAt( bluePaddle.position );
@@ -508,7 +519,7 @@
 				}
 				//left wall
 				if ( (ball.position.x - ballRadius) < -halfArenaWidth ) {
-					bounceSound.play({ follow:ball });
+					bounceSound.play({ position: ball.position });
 					ball.position.x = -halfArenaWidth + ballRadius;
 					ballDirection.reflect( leftTriangleNormal );
 					ballDirection.normalize();
@@ -517,7 +528,7 @@
 				}
 				//right wall
 				if ( (ball.position.x + ballRadius) > halfArenaWidth ) {
-					bounceSound.play({ follow:ball });
+					bounceSound.play({ position: ball.position });
 					ball.position.x = halfArenaWidth - ballRadius;
 					ballDirection.reflect( rightTriangleNormal );
 					ballDirection.normalize();
@@ -526,7 +537,7 @@
 				}
 				//bottom wall
 				if ( (ball.position.y - ballRadius) < -halfArenaHeight ) {
-					bounceSound.play({ follow:ball });
+					bounceSound.play({ position: ball.position });
 					ball.position.y = -halfArenaHeight + ballRadius;
 					ballDirection.reflect( bottomTriangleNormal );
 					ballDirection.normalize();
@@ -535,7 +546,7 @@
 				}
 				//top wall
 				if ( (ball.position.y + ballRadius) > halfArenaHeight ) {
-					bounceSound.play({ follow:ball });
+					bounceSound.play({ position: ball.position });
 					ball.position.y = halfArenaHeight - ballRadius;
 					ballDirection.reflect( topTriangleNormal );
 					ballDirection.normalize();
@@ -642,12 +653,12 @@
 			}
 			*/
 			
-			blueInsideCoef = 1 / bluePaddle.position.distanceTo(ball.position) * 70;
+			blueInsideCoef = 3 / ( bluePaddle.position.distanceToSquared( ball.position ) * 0.001 );
 			if (blueInsideCoef < 1.15) blueInsideCoef = 1.15;
 			if (blueInsideCoef > 3) blueInsideCoef = 3;
 			blueInsideUniforms.coeficient.value = blueInsideCoef;
 			
-			redInsideCoef = 1 / redPaddle.position.distanceTo(ball.position) * 70;
+			redInsideCoef = 3 / ( redPaddle.position.distanceToSquared( ball.position ) * 0.001 );
 			if (redInsideCoef < 1.15) redInsideCoef = 1.15;
 			if (redInsideCoef > 3) redInsideCoef = 3;
 			redInsideUniforms.coeficient.value = redInsideCoef;
