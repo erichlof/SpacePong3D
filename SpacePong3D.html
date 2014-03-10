@@ -18,6 +18,10 @@
 	<div id="difficulty" style="position:fixed; left:2%; top:13%; font-family:arial; color:rgb(100,100,100); border:thin solid;">
 		Difficulty: MEDIUM
 	</div>
+	
+	<div id="volume" style="position:fixed; left:2%; top:18%; font-family:arial; color:rgb(100,100,100); border:thin solid;">
+		SoundLevel: OFF
+	</div>
 
 	<div id="help1" style="position:fixed; left:2%; bottom:8%; font-family:arial; font-size:11px; color:lightgrey;">
 		Desktop: Press 'M' to control paddle with Mouse
@@ -293,8 +297,13 @@
 		document.getElementById( "difficulty" ).onclick = difficultyClickHandler;
 		document.getElementById( "difficulty" ).ontouchend = difficultyClickHandler;
 		
+		var soundLevel = 0;
+		var gameSoundVolume = 0.0;
+		document.getElementById( "volume" ).onclick = volumeClickHandler;
+		document.getElementById( "volume" ).ontouchend = volumeClickHandler;
+		
 		var gameSounds  = new WebAudiox.GameSounds();
-		gameSounds.lineOut.volume = 1.0;
+		gameSounds.lineOut.volume = 0.0;
 		gameSounds.listenerFollow( camera );
 		
 		var bounceSoundUrl	= 'sounds/mediumPing.mp3';
@@ -317,7 +326,8 @@
 		//paddleWinSound.register('ballSounds');
 		var winCutSceneSound = new WebAudiox.GameSound( gameSounds );
 		winCutSceneSound.load( winCutSceneSoundUrl );
-		//paddleWinSound.register('ballSounds');
+		//winCutSceneSound.register('ballSounds');
+		
 		
 		animate();
 
@@ -333,7 +343,6 @@
 			if (winnerCutScene){
 			
 				cameraAngle += frameTime;
-				//cameraAngle += 0.01;
 				
 				bluePaddle.position.x = 0.0;
 				bluePaddle.position.y = 0.0;
@@ -479,7 +488,7 @@
 
 					collisionResult = checkBallPaddleCollision( ball.position, redPaddle.position );
 					if (collisionResult === true) {
-						paddleHitSound.play({ volume: 0.1 });
+						paddleHitSound.play({ volume: gameSoundVolume });
 						ballDirection.reflect( backTriangleNormal );
 						//allow steering
 						ballDirection.x += redPaddleDesiredDirection.x;
@@ -491,7 +500,7 @@
 						ballGlowFlag = true;
 						ballInsideCoef = 2.2;
 					} else {
-						paddleMissSound.play({ volume: 0.3 });
+						paddleMissSound.play({ volume: gameSoundVolume });
 						handleMiss( redPaddle );
 					}
 				}
@@ -501,7 +510,7 @@
 
 					collisionResult = checkBallPaddleCollision( ball.position, bluePaddle.position );
 					if (collisionResult === true) {
-						paddleHitSound.play({ volume: 0.5 });
+						paddleHitSound.play({ volume: gameSoundVolume });
 						ballDirection.reflect( frontTriangleNormal );
 						//allow steering
 						ballDirection.x += deltaXDifference;
@@ -513,13 +522,13 @@
 						ballGlowFlag = true;
 						ballInsideCoef = 2.2;
 					} else {
-						paddleMissSound.play({ volume: 0.4 });
+						paddleMissSound.play({ volume: gameSoundVolume });
 						handleMiss( bluePaddle );
 					}
 				}
 				//left wall
 				if ( (ball.position.x - ballRadius) < -halfArenaWidth ) {
-					bounceSound.play({ position: ball.position });
+					bounceSound.play({ volume: gameSoundVolume, position: ball.position });
 					ball.position.x = -halfArenaWidth + ballRadius;
 					ballDirection.reflect( leftTriangleNormal );
 					ballDirection.normalize();
@@ -528,7 +537,7 @@
 				}
 				//right wall
 				if ( (ball.position.x + ballRadius) > halfArenaWidth ) {
-					bounceSound.play({ position: ball.position });
+					bounceSound.play({ volume: gameSoundVolume, position: ball.position });
 					ball.position.x = halfArenaWidth - ballRadius;
 					ballDirection.reflect( rightTriangleNormal );
 					ballDirection.normalize();
@@ -537,7 +546,7 @@
 				}
 				//bottom wall
 				if ( (ball.position.y - ballRadius) < -halfArenaHeight ) {
-					bounceSound.play({ position: ball.position });
+					bounceSound.play({ volume: gameSoundVolume, position: ball.position });
 					ball.position.y = -halfArenaHeight + ballRadius;
 					ballDirection.reflect( bottomTriangleNormal );
 					ballDirection.normalize();
@@ -546,7 +555,7 @@
 				}
 				//top wall
 				if ( (ball.position.y + ballRadius) > halfArenaHeight ) {
-					bounceSound.play({ position: ball.position });
+					bounceSound.play({ volume: gameSoundVolume, position: ball.position });
 					ball.position.y = halfArenaHeight - ballRadius;
 					ballDirection.reflect( topTriangleNormal );
 					ballDirection.normalize();
@@ -592,8 +601,8 @@
 					if (missedTimer.alarmSounding){
 				
 						if(blueWins || redWins){
-							paddleWinSound.play({ volume: 0.1 });
-							winCutSceneSound.play({ volume: 0.1 });
+							paddleWinSound.play({ volume: gameSoundVolume / 20.0 });
+							winCutSceneSound.play({ volume: gameSoundVolume / 20.0 });
 							camera.position.set(0,100,0);
 							bluePaddleMissed = false;
 							redPaddleMissed = false;
@@ -722,11 +731,9 @@
 			}
 			if (redScore > 4) {
 				redWins = true;
-				//resetScores = true;
 			}
 			if (blueScore > 4) {
 				blueWins = true;
-				//resetScores = true;
 			}
 			
 		}
@@ -808,6 +815,42 @@
 			}	
 			
 		}
+		
+		function volumeClickHandler(){
+		
+			soundLevel += 1;
+			if(soundLevel > 3)
+				soundLevel = 0;
+		
+			switch (soundLevel){
+				case 0:
+					document.getElementById( "volume" ).innerHTML = "SoundLevel: OFF";
+					gameSounds.lineOut.volume = 0.0;
+					gameSoundVolume = 0.0;
+					break;
+				case 1:
+					document.getElementById( "volume" ).innerHTML = "SoundLevel: LOW";
+					gameSounds.lineOut.volume = 1.0;
+					gameSoundVolume = 0.3;
+					break;
+				case 2:
+					document.getElementById( "volume" ).innerHTML = "SoundLevel: MID";
+					gameSounds.lineOut.volume = 1.0;
+					gameSoundVolume = 0.6;
+					break;
+				case 3:
+					document.getElementById( "volume" ).innerHTML = "SoundLevel: HIGH";
+					gameSounds.lineOut.volume = 1.0;
+					gameSoundVolume = 1.0;
+					break;
+				default: 
+					document.getElementById( "volume" ).innerHTML = "SoundLevel: OFF";
+					gameSounds.lineOut.volume = 0.0;
+					gameSoundVolume = 0.0;
+			}	
+			
+		}
+		
 	</script>
 
 </body>
