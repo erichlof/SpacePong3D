@@ -306,9 +306,9 @@
 		gameSounds.lineOut.volume = 0.0;
 		gameSounds.listenerFollow( camera );
 		
-		var bounceSoundUrl	= 'sounds/mediumPing.mp3';
-		var paddleHitSoundUrl	= 'sounds/lowPing.mp3';
-		var paddleMissSoundUrl	= 'sounds/paddleMiss.mp3';
+		var bounceSoundUrl	= 'sounds/mediumPong.mp3';
+		var paddleHitSoundUrl	= 'sounds/lowPong.mp3';
+		var paddleMissSoundUrl	= 'sounds/ballMiss.mp3';
 		var paddleWinSoundUrl	= 'sounds/winner.mp3';
 		var winCutSceneSoundUrl	= 'sounds/synthHit.mp3';
 		
@@ -488,7 +488,7 @@
 
 					collisionResult = checkBallPaddleCollision( ball.position, redPaddle.position );
 					if (collisionResult === true) {
-						paddleHitSound.play({ volume: gameSoundVolume });
+						paddleHitSound.play({ volume: gameSoundVolume * 3, position: ball.position });
 						ballDirection.reflect( backTriangleNormal );
 						//allow steering
 						ballDirection.x += redPaddleDesiredDirection.x;
@@ -500,7 +500,7 @@
 						ballGlowFlag = true;
 						ballInsideCoef = 2.2;
 					} else {
-						paddleMissSound.play({ volume: gameSoundVolume });
+						paddleMissSound.play({ volume: gameSoundVolume * 3, position: ball.position });
 						handleMiss( redPaddle );
 					}
 				}
@@ -510,7 +510,7 @@
 
 					collisionResult = checkBallPaddleCollision( ball.position, bluePaddle.position );
 					if (collisionResult === true) {
-						paddleHitSound.play({ volume: gameSoundVolume });
+						paddleHitSound.play({ volume: gameSoundVolume * 3, position: ball.position });
 						ballDirection.reflect( frontTriangleNormal );
 						//allow steering
 						ballDirection.x += deltaXDifference;
@@ -522,7 +522,7 @@
 						ballGlowFlag = true;
 						ballInsideCoef = 2.2;
 					} else {
-						paddleMissSound.play({ volume: gameSoundVolume });
+						paddleMissSound.play({ volume: gameSoundVolume * 3, position: ball.position });
 						handleMiss( bluePaddle );
 					}
 				}
@@ -601,8 +601,8 @@
 					if (missedTimer.alarmSounding){
 				
 						if(blueWins || redWins){
-							paddleWinSound.play({ volume: gameSoundVolume / 20.0 });
-							winCutSceneSound.play({ volume: gameSoundVolume / 20.0 });
+							paddleWinSound.play({ volume: gameSoundVolume / 10.0 });
+							winCutSceneSound.play({ volume: gameSoundVolume / 10.0 });
 							camera.position.set(0,100,0);
 							bluePaddleMissed = false;
 							redPaddleMissed = false;
@@ -831,12 +831,12 @@
 				case 1:
 					document.getElementById( "volume" ).innerHTML = "SoundLevel: LOW";
 					gameSounds.lineOut.volume = 1.0;
-					gameSoundVolume = 0.3;
+					gameSoundVolume = 0.4;
 					break;
 				case 2:
 					document.getElementById( "volume" ).innerHTML = "SoundLevel: MID";
 					gameSounds.lineOut.volume = 1.0;
-					gameSoundVolume = 0.6;
+					gameSoundVolume = 0.8;
 					break;
 				case 3:
 					document.getElementById( "volume" ).innerHTML = "SoundLevel: HIGH";
