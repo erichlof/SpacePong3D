@@ -75,7 +75,7 @@
 		document.body.appendChild( renderer.domElement );
 		window.addEventListener( 'resize', onWindowResize, false );
 
-		var gameReset = true;
+		var gameReset = false;
 		var frameTime = 0;
 		var firstTouchMove = true;
 		var joystickDampening = 2;
@@ -328,12 +328,20 @@
 		winCutSceneSound.load( winCutSceneSoundUrl );
 		//winCutSceneSound.register('ballSounds');
 		
+		var allSoundsLoaded = false;
 		
 		animate();
-
-
+		
 		function animate() {
-
+		
+			if(!allSoundsLoaded){
+				if(bounceSound.loaded && paddleHitSound.loaded && paddleMissSound.loaded &&
+					paddleWinSound.loaded && winCutSceneSound.loaded){
+						gameReset = true;
+						allSoundsLoaded=true;
+				} 
+			}
+			
 			requestAnimationFrame( animate );
 
 			frameTime = clock.getDelta();
@@ -500,7 +508,7 @@
 						ballGlowFlag = true;
 						ballInsideCoef = 2.2;
 					} else {
-						paddleMissSound.play({ volume: gameSoundVolume * 3, position: ball.position });
+						paddleMissSound.play({ volume: gameSoundVolume * 5, position: ball.position });
 						handleMiss( redPaddle );
 					}
 				}
@@ -522,7 +530,7 @@
 						ballGlowFlag = true;
 						ballInsideCoef = 2.2;
 					} else {
-						paddleMissSound.play({ volume: gameSoundVolume * 3, position: ball.position });
+						paddleMissSound.play({ volume: gameSoundVolume * 5, position: ball.position });
 						handleMiss( bluePaddle );
 					}
 				}
