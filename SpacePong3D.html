@@ -2,48 +2,76 @@
 <html>
 
 <head>
-	<meta name="viewport" content="width=device-width, height=device-height, user-scalable=no">
+	<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 	<title>SpacePong3D</title>
+
+	<style>
+		body {
+			background-color: rgb(0, 0, 0);
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+	</style>
+
 </head>
 
 <body>
+	<div id="container"> </div>
+
 	<div id="gametitle" style="position:fixed; left:2%; top:4%; font-family:arial; font-type:bold; color:lightgrey;">
 		SpacePong3D
 	</div>
-	
+
 	<div id="gravity" style="position:fixed; left:2%; top:8%; font-family:arial; color:rgb(100,100,100); border:thin solid;">
 		Gravity OFF
 	</div>
-	
+
 	<div id="difficulty" style="position:fixed; left:2%; top:13%; font-family:arial; color:rgb(100,100,100); border:thin solid;">
 		Difficulty: MEDIUM
 	</div>
-	
+
 	<div id="volume" style="position:fixed; left:2%; top:18%; font-family:arial; color:rgb(100,100,100); border:thin solid;">
 		SoundLevel: OFF
 	</div>
 
-	<div id="help1" style="position:fixed; left:2%; bottom:8%; font-family:arial; font-size:11px; color:lightgrey;">
+	<div id="help1" style="position:fixed; right:1%; bottom:8%; font-family:arial; font-size:10px; color:lightgrey;">
 		Desktop: Press 'M' to control paddle with Mouse
 	</div>
 
-	<div id="help2" style="position:fixed; left:2%; bottom:4%; font-family:arial; font-size:11px; color:lightgrey;">
+	<div id="help2" style="position:fixed; right:1%; bottom:4%; font-family:arial; font-size:10px; color:lightgrey;">
 		Mobile: slow Swipe to control paddle
 	</div>
-	
+
 	<div id="bluescore" style="position:fixed; right:18%; top:4%; font-family:arial; font-type:bold; color:blue;">
 		0
 	</div>
-	
+
 	<div id="redscore" style="position:fixed; right:3%; top:4%; font-family:arial; font-type:bold; color:red;">
 		0
 	</div>
-	
+
 	<div id="winner" style="position:fixed; left:40%; top:20%; font-family:arial; font-type:bold; color:black;">
-	
+
 	</div>
-	
-	
+
+	<input id="textInput" style="position:fixed; bottom:6%; font-size:10px;" placeholder="enter-your-name-here" onkeyup="textEnterHandler(true, event)">
+	<input id="submitButton" style="position:fixed; bottom:2%; font-size:10px;" type="button" value="Join Lobby" onclick="textEnterHandler(false, null)">
+
+	<div id="chatLine1" style="position:fixed; bottom:19%; font-family:arial; font-size:10px; font-type:bold; color:orange">
+		
+	</div>
+	<div id="chatLine2" style="position:fixed; bottom:16%; font-family:arial; font-size:10px; font-type:bold; color:orange">
+
+	</div>
+	<div id="chatLine3" style="position:fixed; bottom:13%; font-family:arial; font-size:10px; font-type:bold; color:orange">
+
+	</div>
+	<div id="chatLine4" style="position:fixed; bottom:10%; font-family:arial; font-size:10px; font-type:bold; color:yellow">
+		Multiplayer: Enter your name and press Join Lobby
+	</div>
+
 	<script src="http://threejs.org/build/three.min.js"></script>
 	<script src="js/threex.texturecube.js"></script>
 	<script src="js/threex.skymap.js"></script>
@@ -52,28 +80,38 @@
 	<script src="js/threex.GameTimer.js"></script>
 	<script src="js/threex.geometricglowmesh.js"></script>
 	<script src="js/webaudioxGameSounds.js"></script>
-	
+	<script src="http://cdn.pubnub.com/pubnub.min.js"></script>
+
+	<script src="js/webrtc-beta-pubnub.0.7.0.min.js"></script>
+	<script src="js/SpacePongNetwork.js"></script>
+
 	<script>
 		var windowWidth = window.innerWidth;
 		var windowHeight = window.innerHeight;
 		var halfWindowWidth = windowWidth / 2;
 		var halfWindowHeight = windowHeight / 2;
 		var scene = new THREE.Scene();
-		var camera = new THREE.PerspectiveCamera( 65, windowWidth / windowHeight, 0.1, 2000 );
+		var camera = new THREE.PerspectiveCamera(65, windowWidth / windowHeight, 0.1, 2000);
 		var clock = new THREE.Clock();
-		var missedTimer = new THREEx.GameTimer( 3 );
-		var cutSceneTimer = new THREEx.GameTimer( 6 );
+		var missedTimer = new THREEx.GameTimer(3);
+		var cutSceneTimer = new THREEx.GameTimer(6);
+          	var presenceTimer = new THREEx.GameTimer(7);
+          	var runningPresence = false;
 		var keyboard = new THREEx.KeyboardState();
 		var joystick = new VirtualJoystick({
 			mouseSupport: true,
 			hideJoystick: true
 		});
 
-		var renderer = new THREE.WebGLRenderer({ antialias:true });
-		renderer.setClearColor( 'rgb(0,0,0)', 1 );
-		renderer.setSize( windowWidth, windowHeight );
-		document.body.appendChild( renderer.domElement );
-		window.addEventListener( 'resize', onWindowResize, false );
+		var renderer = new THREE.WebGLRenderer({
+			antialias: true
+		});
+		renderer.setClearColor('rgb(0,0,0)', 1);
+		renderer.setSize(windowWidth, windowHeight);
+		 //renderer.domElement.style.position = "relative";
+		 //document.body.appendChild( renderer.domElement );
+		document.getElementById("container").appendChild(renderer.domElement);
+		window.addEventListener('resize', onWindowResize, false);
 
 		var gameReset = false;
 		var frameTime = 0;
@@ -87,7 +125,7 @@
 		var newDeltaY = 0;
 
 		var ballSpeed = 0;
-		var ballDirection = new THREE.Vector3( 0, 0, 0 );
+		var ballDirection = new THREE.Vector3(0, 0, 0);
 		var gravityOn = false;
 		var ballRadius = 3;
 		var paddleWidth = 20;
@@ -108,7 +146,7 @@
 		var collisionResult = false;
 		var bluePaddleMissed = false;
 		var redPaddleMissed = false;
-		var redPaddleDesiredDirection = new THREE.Vector3( 0, 0, 0 );
+		var redPaddleDesiredDirection = new THREE.Vector3(0, 0, 0);
 		var redPaddleFixedPosZ = 0;
 		var bluePaddleFixedPosZ = 0;
 		var mouseControl = false;
@@ -119,8 +157,8 @@
 		var redWins = false;
 		var winnerCutScene = false;
 		var cameraAngle = 0;
-		
-		//var skybox = THREEx.createSkymap( 'skybox' )
+
+		 //var skybox = THREEx.createSkymap( 'skybox' )
 		 //scene.add( skybox );
 		var skyCubeTexture = THREEx.createTextureCube([
 			'images/skybox/moondust-xpos.png', 'images/skybox/moondust-xneg.png',
@@ -133,24 +171,24 @@
 			cubeH: 300,
 			cubeD: 1000
 		});
-		scene.add( skyMesh );
-		
-		var backTriangle = new THREE.Triangle( new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth) );
+		scene.add(skyMesh);
+
+		var backTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth));
 		var backTriangleNormal = backTriangle.normal();
-		var frontTriangle = new THREE.Triangle( new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth) );
+		var frontTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
 		var frontTriangleNormal = frontTriangle.normal();
-		var rightTriangle = new THREE.Triangle( new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth) );
+		var rightTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth));
 		var rightTriangleNormal = rightTriangle.normal();
-		var leftTriangle = new THREE.Triangle( new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth) );
+		var leftTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
 		var leftTriangleNormal = leftTriangle.normal();
-		var topTriangle = new THREE.Triangle( new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth) );
+		var topTriangle = new THREE.Triangle(new THREE.Vector3(halfArenaWidth, halfArenaHeight, -halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth));
 		var topTriangleNormal = topTriangle.normal();
-		var bottomTriangle = new THREE.Triangle( new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth) );
+		var bottomTriangle = new THREE.Triangle(new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, -halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth));
 		var bottomTriangleNormal = bottomTriangle.normal();
 
 		var lineGeometry = new THREE.Geometry();
 		var vertArray = lineGeometry.vertices;
-		vertArray.push( new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth),
+		vertArray.push(new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth),
 			new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth),
 			new THREE.Vector3(-halfArenaWidth, halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, halfArenaHeight, halfArenaDepth),
 			new THREE.Vector3(-halfArenaWidth, -halfArenaHeight, halfArenaDepth), new THREE.Vector3(halfArenaWidth, -halfArenaHeight, halfArenaDepth),
@@ -169,101 +207,101 @@
 		var lineMaterial = new THREE.LineBasicMaterial({
 			color: 'rgb(0,255,0)'
 		});
-		var lineArena = new THREE.Line( lineGeometry, lineMaterial, THREE.LinePieces );
-		scene.add( lineArena );
-		//lineArena.visible = false;
-		
+		var lineArena = new THREE.Line(lineGeometry, lineMaterial, THREE.LinePieces);
+		scene.add(lineArena);
+		 //lineArena.visible = false;
+
 		 //blue paddle
-		var boxGeometry = new THREE.BoxGeometry( paddleWidth, paddleHeight, paddleDepth );
+		var boxGeometry = new THREE.BoxGeometry(paddleWidth, paddleHeight, paddleDepth);
 		var boxMaterial = new THREE.MeshBasicMaterial();
-		var bluePaddle = new THREE.Mesh( boxGeometry, boxMaterial );
-		scene.add( bluePaddle );
+		var bluePaddle = new THREE.Mesh(boxGeometry, boxMaterial);
+		scene.add(bluePaddle);
 		bluePaddle.visible = false;
-		
-		var blueGlow = new THREEx.GeometricGlowMesh( bluePaddle );
-		blueGlow.outsideMesh.scale.set( 1.08, 1.08, 1 );
-		bluePaddle.add( blueGlow.object3d );
-		
+
+		var blueGlow = new THREEx.GeometricGlowMesh(bluePaddle);
+		blueGlow.outsideMesh.scale.set(1.08, 1.08, 1);
+		bluePaddle.add(blueGlow.object3d);
+
 		var blueInsideUniforms = blueGlow.insideMesh.material.uniforms;
 		var blueOutsideUniforms = blueGlow.outsideMesh.material.uniforms;
-		blueInsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(0,0,255)' ) );
-		blueOutsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(0,0,50)' ) );
+		blueInsideUniforms.glowColor.value.set(new THREE.Color('rgb(0,0,255)'));
+		blueOutsideUniforms.glowColor.value.set(new THREE.Color('rgb(0,0,50)'));
 		var blueInsideCoef = 1.2;
-		
-		//var insideFlag = true;
-		blueInsideUniforms.coeficient.value = blueInsideCoef;//range 0 - 2
-		blueInsideUniforms.power.value = 0.8;//range 0 - 5
-		blueOutsideUniforms.coeficient.value = 1.1;//range 0 - 2
-		blueOutsideUniforms.power.value = 0.8;//range 0 - 5
+
+		 //var insideFlag = true;
+		blueInsideUniforms.coeficient.value = blueInsideCoef; //range 0 - 2
+		blueInsideUniforms.power.value = 0.8; //range 0 - 5
+		blueOutsideUniforms.coeficient.value = 1.1; //range 0 - 2
+		blueOutsideUniforms.power.value = 0.8; //range 0 - 5
 
 		 //red paddle
-		var boxGeometry = new THREE.BoxGeometry( paddleWidth, paddleHeight, paddleDepth );
+		var boxGeometry = new THREE.BoxGeometry(paddleWidth, paddleHeight, paddleDepth);
 		var boxMaterial = new THREE.MeshBasicMaterial();
-		var redPaddle = new THREE.Mesh( boxGeometry, boxMaterial );
-		scene.add( redPaddle );
+		var redPaddle = new THREE.Mesh(boxGeometry, boxMaterial);
+		scene.add(redPaddle);
 		redPaddle.visible = false;
-		
-		var redGlow = new THREEx.GeometricGlowMesh( redPaddle );
-		redGlow.outsideMesh.scale.set( 1.08, 1.08, 1 );
-		redPaddle.add( redGlow.object3d );
-		
+
+		var redGlow = new THREEx.GeometricGlowMesh(redPaddle);
+		redGlow.outsideMesh.scale.set(1.08, 1.08, 1);
+		redPaddle.add(redGlow.object3d);
+
 		var redInsideUniforms = redGlow.insideMesh.material.uniforms;
 		var redOutsideUniforms = redGlow.outsideMesh.material.uniforms;
-		redInsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(255,0,0)' ) );
-		redOutsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(50,0,0)' ) );
+		redInsideUniforms.glowColor.value.set(new THREE.Color('rgb(255,0,0)'));
+		redOutsideUniforms.glowColor.value.set(new THREE.Color('rgb(50,0,0)'));
 		var redInsideCoef = 1.2;
-		
-		redInsideUniforms.coeficient.value = redInsideCoef;//range 0 - 2
-		redInsideUniforms.power.value = 0.8;//range 0 - 5
-		redOutsideUniforms.coeficient.value = 1.1;//range 0 - 2
-		redOutsideUniforms.power.value = 0.8;//range 0 - 5
-		
+
+		redInsideUniforms.coeficient.value = redInsideCoef; //range 0 - 2
+		redInsideUniforms.power.value = 0.8; //range 0 - 5
+		redOutsideUniforms.coeficient.value = 1.1; //range 0 - 2
+		redOutsideUniforms.power.value = 0.8; //range 0 - 5
+
 		 //ball
-		var sphereGeometry = new THREE.SphereGeometry( ballRadius, 10, 10 );
+		var sphereGeometry = new THREE.SphereGeometry(ballRadius, 10, 10);
 		var sphereMaterial = new THREE.MeshBasicMaterial();
-		var ball = new THREE.Mesh( sphereGeometry, sphereMaterial );
-		scene.add( ball );
+		var ball = new THREE.Mesh(sphereGeometry, sphereMaterial);
+		scene.add(ball);
 		ball.visible = false;
-		
-		var ballGlow = new THREEx.GeometricGlowMesh( ball );
-		ballGlow.outsideMesh.scale.set( 1.2, 1.2, 1.2 );
-		ball.add( ballGlow.object3d );
-		
+
+		var ballGlow = new THREEx.GeometricGlowMesh(ball);
+		ballGlow.outsideMesh.scale.set(1.2, 1.2, 1.2);
+		ball.add(ballGlow.object3d);
+
 		var ballInsideUniforms = ballGlow.insideMesh.material.uniforms;
 		var ballOutsideUniforms = ballGlow.outsideMesh.material.uniforms;
-		ballInsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(255,255,255)' ) );
-		ballOutsideUniforms.glowColor.value.set( new THREE.Color( 'rgb(35,35,35)' ) );
+		ballInsideUniforms.glowColor.value.set(new THREE.Color('rgb(255,255,255)'));
+		ballOutsideUniforms.glowColor.value.set(new THREE.Color('rgb(35,35,35)'));
 		var ballInsideCoef = 1.1;
 
-		ballInsideUniforms.coeficient.value = ballInsideCoef;//range 0 - 2
-		ballInsideUniforms.power.value = 0.8;//range 0 - 5
-		ballOutsideUniforms.coeficient.value = 1.1;//range 0 - 2
-		ballOutsideUniforms.power.value = 0.8;//range 0 - 5
+		ballInsideUniforms.coeficient.value = ballInsideCoef; //range 0 - 2
+		ballInsideUniforms.power.value = 0.8; //range 0 - 5
+		ballOutsideUniforms.coeficient.value = 1.1; //range 0 - 2
+		ballOutsideUniforms.power.value = 0.8; //range 0 - 5
 		var ballGlowFlag = false;
 
 		 // Circle
 		var circleRadius = ballRadius;
 		var circleShape = new THREE.Shape();
-		circleShape.moveTo( 0, circleRadius );
-		circleShape.quadraticCurveTo( circleRadius, circleRadius, circleRadius, 0 );
-		circleShape.quadraticCurveTo( circleRadius, -circleRadius, 0, -circleRadius );
-		circleShape.quadraticCurveTo( -circleRadius, -circleRadius, -circleRadius, 0 );
-		circleShape.quadraticCurveTo( -circleRadius, circleRadius, 0, circleRadius );
+		circleShape.moveTo(0, circleRadius);
+		circleShape.quadraticCurveTo(circleRadius, circleRadius, circleRadius, 0);
+		circleShape.quadraticCurveTo(circleRadius, -circleRadius, 0, -circleRadius);
+		circleShape.quadraticCurveTo(-circleRadius, -circleRadius, -circleRadius, 0);
+		circleShape.quadraticCurveTo(-circleRadius, circleRadius, 0, circleRadius);
 
-		var discGeometry = new THREE.ShapeGeometry( circleShape );
+		var discGeometry = new THREE.ShapeGeometry(circleShape);
 		var discMaterial = new THREE.MeshBasicMaterial({
 			color: 'rgb(100,100,100)',
 			transparent: true,
-			opacity: 0.5 
+			opacity: 0.5
 		});
-		var disc1 = new THREE.Mesh( discGeometry, discMaterial );
-		scene.add( disc1 );
-		var disc2 = new THREE.Mesh( discGeometry, discMaterial );
-		scene.add( disc2 );
-		var disc3 = new THREE.Mesh( discGeometry, discMaterial );
-		scene.add( disc3 );
-		var disc4 = new THREE.Mesh( discGeometry, discMaterial );
-		scene.add( disc4 );
+		var disc1 = new THREE.Mesh(discGeometry, discMaterial);
+		scene.add(disc1);
+		var disc2 = new THREE.Mesh(discGeometry, discMaterial);
+		scene.add(disc2);
+		var disc3 = new THREE.Mesh(discGeometry, discMaterial);
+		scene.add(disc3);
+		var disc4 = new THREE.Mesh(discGeometry, discMaterial);
+		scene.add(disc4);
 
 		updateHUD();
 
@@ -279,79 +317,80 @@
 		redPaddleFixedPosZ = -arenaDepth / 2 - paddleDepth;
 		redPaddle.position.z = redPaddleFixedPosZ;
 
-		disc1.position.set( halfArenaWidth, 0, 0 );
-		disc1.rotation.set( 0, Math.PI / -2, 0 );
-		disc2.position.set( -halfArenaWidth, 0, 0 );
-		disc2.rotation.set( 0, Math.PI / 2, 0 );
-		disc3.position.set( 0, halfArenaHeight, 0 );
-		disc3.rotation.set( Math.PI / 2, 0, 0 );
-		disc4.position.set( 0, -halfArenaHeight, 0 );
-		disc4.rotation.set( Math.PI / -2, 0, 0 );
-		
+		disc1.position.set(halfArenaWidth, 0, 0);
+		disc1.rotation.set(0, Math.PI / -2, 0);
+		disc2.position.set(-halfArenaWidth, 0, 0);
+		disc2.rotation.set(0, Math.PI / 2, 0);
+		disc3.position.set(0, halfArenaHeight, 0);
+		disc3.rotation.set(Math.PI / 2, 0, 0);
+		disc4.position.set(0, -halfArenaHeight, 0);
+		disc4.rotation.set(Math.PI / -2, 0, 0);
+
 		var gravityClicked = false;
-		document.getElementById( "gravity" ).onclick = gravityClickHandler;
-		document.getElementById( "gravity" ).ontouchend = gravityClickHandler;
-		
+		document.getElementById("gravity").onclick = gravityClickHandler;
+
 		var difficultyLevel = 1;
 		var redPaddleMaxSpeed = 110;
-		document.getElementById( "difficulty" ).onclick = difficultyClickHandler;
-		document.getElementById( "difficulty" ).ontouchend = difficultyClickHandler;
-		
+		document.getElementById("difficulty").onclick = difficultyClickHandler;
+
 		var soundLevel = 0;
 		var gameSoundVolume = 0.0;
-		document.getElementById( "volume" ).onclick = volumeClickHandler;
-		document.getElementById( "volume" ).ontouchend = volumeClickHandler;
-		
+		document.getElementById("volume").onclick = volumeClickHandler;
+
 		var gameSounds  = new WebAudiox.GameSounds();
 		gameSounds.lineOut.volume = 0.0;
-		gameSounds.listenerFollow( camera );
-		
-		var bounceSoundUrl	= 'sounds/mediumPong.mp3';
-		var paddleHitSoundUrl	= 'sounds/lowPong.mp3';
-		var paddleMissSoundUrl	= 'sounds/ballMiss.mp3';
-		var paddleWinSoundUrl	= 'sounds/winner.mp3';
-		var winCutSceneSoundUrl	= 'sounds/synthHit.mp3';
-		
-		var bounceSound = new WebAudiox.GameSound( gameSounds );
-		bounceSound.load( bounceSoundUrl );
-		//bounceSound.register('ballSounds');
-		var paddleHitSound = new WebAudiox.GameSound( gameSounds );
-		paddleHitSound.load( paddleHitSoundUrl );
-		//paddleHitSound.register('ballSounds');
-		var paddleMissSound = new WebAudiox.GameSound( gameSounds );
-		paddleMissSound.load( paddleMissSoundUrl );
-		//paddleMissSound.register('ballSounds');
-		var paddleWinSound = new WebAudiox.GameSound( gameSounds );
-		paddleWinSound.load( paddleWinSoundUrl );
-		//paddleWinSound.register('ballSounds');
-		var winCutSceneSound = new WebAudiox.GameSound( gameSounds );
-		winCutSceneSound.load( winCutSceneSoundUrl );
-		//winCutSceneSound.register('ballSounds');
-		
+		gameSounds.listenerFollow(camera);
+
+		var bounceSoundUrl = 'sounds/mediumPong.mp3';
+		var paddleHitSoundUrl = 'sounds/lowPong.mp3';
+		var paddleMissSoundUrl = 'sounds/ballMiss.mp3';
+		var paddleWinSoundUrl = 'sounds/winner.mp3';
+		var winCutSceneSoundUrl = 'sounds/synthHit.mp3';
+
+		var bounceSound = new WebAudiox.GameSound(gameSounds);
+		bounceSound.load(bounceSoundUrl);
+		var paddleHitSound = new WebAudiox.GameSound(gameSounds);
+		paddleHitSound.load(paddleHitSoundUrl);
+		var paddleMissSound = new WebAudiox.GameSound(gameSounds);
+		paddleMissSound.load(paddleMissSoundUrl);
+		var paddleWinSound = new WebAudiox.GameSound(gameSounds);
+		paddleWinSound.load(paddleWinSoundUrl);
+		var winCutSceneSound = new WebAudiox.GameSound(gameSounds);
+		winCutSceneSound.load(winCutSceneSoundUrl);
+
 		var allSoundsLoaded = false;
 		
 		animate();
-		
+
+
 		function animate() {
-		
-			if(!allSoundsLoaded){
-				if(bounceSound.loaded && paddleHitSound.loaded && paddleMissSound.loaded &&
-					paddleWinSound.loaded && winCutSceneSound.loaded){
-						gameReset = true;
-						allSoundsLoaded=true;
-				} 
+
+			if (!allSoundsLoaded) {
+				if (bounceSound.loaded && paddleHitSound.loaded && paddleMissSound.loaded &&
+					paddleWinSound.loaded && winCutSceneSound.loaded) {
+					gameReset = true;
+					allSoundsLoaded = true;
+				}
 			}
-			
-			requestAnimationFrame( animate );
+
+			requestAnimationFrame(animate);
 
 			frameTime = clock.getDelta();
-			
-			gameSounds.update( frameTime );
-			
-			if (winnerCutScene){
-			
+                  	
+                  	if (runningPresence){
+                  		presenceTimer.run(frameTime);
+                  		if (presenceTimer.alarmSounding){
+                  			runPresence();
+                  			runningPresence = false;
+                  		}
+                  	}
+
+			gameSounds.update(frameTime);
+
+			if (winnerCutScene) {
+
 				cameraAngle += frameTime;
-				
+
 				bluePaddle.position.x = 0.0;
 				bluePaddle.position.y = 0.0;
 				bluePaddle.position.z = bluePaddleFixedPosZ;
@@ -359,44 +398,44 @@
 				redPaddle.position.x = 0.0;
 				redPaddle.position.y = 0.0;
 				redPaddle.position.z = redPaddleFixedPosZ;
-				
-				if(blueWins){
-					camera.lookAt( bluePaddle.position );
+
+				if (blueWins) {
+					camera.lookAt(bluePaddle.position);
 					camera.position.x = bluePaddle.position.x + Math.sin(cameraAngle) * 50;
 					camera.position.z = bluePaddle.position.z + Math.cos(cameraAngle) * 50;
-				}	
-				if(redWins){
-					camera.lookAt( redPaddle.position );
+				}
+				if (redWins) {
+					camera.lookAt(redPaddle.position);
 					camera.position.x = redPaddle.position.x + Math.sin(cameraAngle) * 50;
 					camera.position.z = redPaddle.position.z + Math.cos(cameraAngle) * 50;
 				}
 				camera.position.y = -30;
-				
-				cutSceneTimer.run( frameTime );
-				
-				if(cutSceneTimer.alarmSounding){
+
+				cutSceneTimer.run(frameTime);
+
+				if (cutSceneTimer.alarmSounding) {
 					gameReset = true;
 					resetScores = true;
 					cutSceneTimer.reset();
 					winnerCutScene = false;
 				}
-				
+
 			}
 
 			if (gameReset) {
 				cameraAngle = 0;
-				camera.position.set( 0, 0, 160 );
-				ball.position.set( 0, 0, 0 );
-				
-				if(difficultyLevel == 0)
+				camera.position.set(0, 0, 160);
+				ball.position.set(0, 0, 0);
+
+				if (difficultyLevel == 0)
 					ballSpeed = 70;
-				if(difficultyLevel == 1)
+				if (difficultyLevel == 1)
 					ballSpeed = 80;
-				if(difficultyLevel == 2)
+				if (difficultyLevel == 2)
 					ballSpeed = 100;
-				if(difficultyLevel == 3)
+				if (difficultyLevel == 3)
 					ballSpeed = 130;
-					
+
 				ballDirection.x = 1 - Math.random() * 2;
 				ballDirection.y = 1 - Math.random() * 2;
 				ballDirection.z = -1.5;
@@ -412,37 +451,37 @@
 					redScore = 0;
 					resetScores = false;
 				}
-				
-				document.getElementById( "bluescore" ).innerHTML = blueScore;
-				document.getElementById( "redscore" ).innerHTML = redScore;
-				
-				document.getElementById( "winner" ).innerHTML = "";
-				
-				gameReset = false;
-				
-			}//end if (gameReset)
 
-			if(winnerCutScene == false){
-			
-				if ( keyboard.pressed("D") ) {
+				document.getElementById("bluescore").innerHTML = blueScore;
+				document.getElementById("redscore").innerHTML = redScore;
+
+				document.getElementById("winner").innerHTML = "";
+
+				gameReset = false;
+
+			} //end if (gameReset)
+
+			if (winnerCutScene == false) {
+
+				if (keyboard.pressed("D")) {
 					bluePaddle.position.x += 50 * frameTime;
 				}
-				if ( keyboard.pressed("A") ) {
+				if (keyboard.pressed("A")) {
 					bluePaddle.position.x -= 50 * frameTime;
 				}
-				if ( keyboard.pressed("W") ) {
+				if (keyboard.pressed("W")) {
 					bluePaddle.position.y += 50 * frameTime;
 				}
-				if ( keyboard.pressed("S") ) {
+				if (keyboard.pressed("S")) {
 					bluePaddle.position.y -= 50 * frameTime;
 				}
 
-				if ( keyboard.pressed("M") ) {
+				if (keyboard.pressed("M")) {
 					mouseControl = true;
 				}
-			
+
 				if (joystick) {
-			
+
 					newDeltaX = joystick.deltaX();
 					newDeltaY = joystick.deltaY();
 
@@ -455,8 +494,8 @@
 					if (joystick._pressed) {
 
 						if (firstTouchMove == false) {
-							bluePaddle.position.x += ( deltaXDifference / joystickDampening );
-							bluePaddle.position.y -= ( deltaYDifference / joystickDampening );
+							bluePaddle.position.x += (deltaXDifference / joystickDampening);
+							bluePaddle.position.y -= (deltaYDifference / joystickDampening);
 						} else if (firstTouchMove == true) {
 							//did the player swipe yet?
 							if (Math.abs(deltaXDifference) > 0 || Math.abs(deltaYDifference) > 0) {
@@ -475,164 +514,191 @@
 					oldDeltaY = newDeltaY;
 
 				} //end if(joystick)
-			
-			}//end if(winnerCutScene == false)
-			
+
+			} //end if(winnerCutScene == false)
+
 			//gravity effect
 			if (gravityOn)
 				ballDirection.y -= 0.3 * frameTime;
 
-			ball.translateOnAxis( ballDirection, ballSpeed * frameTime );
-				
-			
+			ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
+
+
 
 
 			if (bluePaddleMissed == false && redPaddleMissed == false && winnerCutScene == false) {
-				
+
 				updateAI();
 				//back wall Red Paddle
-				if ( (ball.position.z - ballRadius) < redPaddle.position.z ) {
+				if ((ball.position.z - ballRadius) < redPaddle.position.z) {
 					ball.position.z = redPaddle.position.z + ballRadius;
 
-					collisionResult = checkBallPaddleCollision( ball.position, redPaddle.position );
+					collisionResult = checkBallPaddleCollision(ball.position, redPaddle.position);
 					if (collisionResult === true) {
-						paddleHitSound.play({ volume: gameSoundVolume * 3, position: ball.position });
-						ballDirection.reflect( backTriangleNormal );
+						paddleHitSound.play({
+							volume: gameSoundVolume * 3,
+							position: ball.position
+						});
+						ballDirection.reflect(backTriangleNormal);
 						//allow steering
 						ballDirection.x += redPaddleDesiredDirection.x;
 						ballDirection.y += redPaddleDesiredDirection.y;
-						ballDirection.z += ( Math.abs(redPaddleDesiredDirection.x) + Math.abs(redPaddleDesiredDirection.y) );
+						ballDirection.z += (Math.abs(redPaddleDesiredDirection.x) + Math.abs(redPaddleDesiredDirection.y));
 						ballDirection.normalize();
 						//slightly increase ball speed every volley
 						ballSpeed *= 1.03;
 						ballGlowFlag = true;
 						ballInsideCoef = 2.2;
 					} else {
-						paddleMissSound.play({ volume: gameSoundVolume * 5, position: ball.position });
-						handleMiss( redPaddle );
+						paddleMissSound.play({
+							volume: gameSoundVolume * 5,
+							position: ball.position
+						});
+						handleMiss(redPaddle);
 					}
 				}
 				//front wall Blue Paddle
-				if ( (ball.position.z + ballRadius) > bluePaddle.position.z ) {
+				if ((ball.position.z + ballRadius) > bluePaddle.position.z) {
 					ball.position.z = bluePaddle.position.z - ballRadius;
 
-					collisionResult = checkBallPaddleCollision( ball.position, bluePaddle.position );
+					collisionResult = checkBallPaddleCollision(ball.position, bluePaddle.position);
 					if (collisionResult === true) {
-						paddleHitSound.play({ volume: gameSoundVolume * 3, position: ball.position });
-						ballDirection.reflect( frontTriangleNormal );
+						paddleHitSound.play({
+							volume: gameSoundVolume * 3,
+							position: ball.position
+						});
+						ballDirection.reflect(frontTriangleNormal);
 						//allow steering
 						ballDirection.x += deltaXDifference;
 						ballDirection.y -= deltaYDifference;
-						ballDirection.z -= ( Math.abs(deltaXDifference) + Math.abs(deltaYDifference) );
+						ballDirection.z -= (Math.abs(deltaXDifference) + Math.abs(deltaYDifference));
 						ballDirection.normalize();
 						//slightly increase ball speed every volley
 						ballSpeed *= 1.03;
 						ballGlowFlag = true;
 						ballInsideCoef = 2.2;
 					} else {
-						paddleMissSound.play({ volume: gameSoundVolume * 5, position: ball.position });
-						handleMiss( bluePaddle );
+						paddleMissSound.play({
+							volume: gameSoundVolume * 5,
+							position: ball.position
+						});
+						handleMiss(bluePaddle);
 					}
 				}
 				//left wall
-				if ( (ball.position.x - ballRadius) < -halfArenaWidth ) {
-					bounceSound.play({ volume: gameSoundVolume, position: ball.position });
+				if ((ball.position.x - ballRadius) < -halfArenaWidth) {
+					bounceSound.play({
+						volume: gameSoundVolume,
+						position: ball.position
+					});
 					ball.position.x = -halfArenaWidth + ballRadius;
-					ballDirection.reflect( leftTriangleNormal );
+					ballDirection.reflect(leftTriangleNormal);
 					ballDirection.normalize();
 					ballGlowFlag = true;
 					ballInsideCoef = 2.2;
 				}
 				//right wall
-				if ( (ball.position.x + ballRadius) > halfArenaWidth ) {
-					bounceSound.play({ volume: gameSoundVolume, position: ball.position });
+				if ((ball.position.x + ballRadius) > halfArenaWidth) {
+					bounceSound.play({
+						volume: gameSoundVolume,
+						position: ball.position
+					});
 					ball.position.x = halfArenaWidth - ballRadius;
-					ballDirection.reflect( rightTriangleNormal );
+					ballDirection.reflect(rightTriangleNormal);
 					ballDirection.normalize();
 					ballGlowFlag = true;
 					ballInsideCoef = 2.2;
 				}
 				//bottom wall
-				if ( (ball.position.y - ballRadius) < -halfArenaHeight ) {
-					bounceSound.play({ volume: gameSoundVolume, position: ball.position });
+				if ((ball.position.y - ballRadius) < -halfArenaHeight) {
+					bounceSound.play({
+						volume: gameSoundVolume,
+						position: ball.position
+					});
 					ball.position.y = -halfArenaHeight + ballRadius;
-					ballDirection.reflect( bottomTriangleNormal );
+					ballDirection.reflect(bottomTriangleNormal);
 					ballDirection.normalize();
 					ballGlowFlag = true;
 					ballInsideCoef = 2.2;
 				}
 				//top wall
-				if ( (ball.position.y + ballRadius) > halfArenaHeight ) {
-					bounceSound.play({ volume: gameSoundVolume, position: ball.position });
+				if ((ball.position.y + ballRadius) > halfArenaHeight) {
+					bounceSound.play({
+						volume: gameSoundVolume,
+						position: ball.position
+					});
 					ball.position.y = halfArenaHeight - ballRadius;
-					ballDirection.reflect( topTriangleNormal );
+					ballDirection.reflect(topTriangleNormal);
 					ballDirection.normalize();
 					ballGlowFlag = true;
 					ballInsideCoef = 2.2;
 				}
-				
-			
+
+
 
 				if (ball.position.x > 0) {
 					disc1.visible = true;
-					disc1.position.set( halfArenaWidth, ball.position.y, ball.position.z );
+					disc1.position.set(halfArenaWidth, ball.position.y, ball.position.z);
 					disc2.visible = false;
 				}
 				if (ball.position.x < 0) {
 					disc2.visible = true;
-					disc2.position.set( -halfArenaWidth, ball.position.y, ball.position.z );
+					disc2.position.set(-halfArenaWidth, ball.position.y, ball.position.z);
 					disc1.visible = false;
 				}
 				if (ball.position.y > 0) {
 					disc3.visible = true;
-					disc3.position.set( ball.position.x, halfArenaHeight, ball.position.z );
+					disc3.position.set(ball.position.x, halfArenaHeight, ball.position.z);
 					disc4.visible = false;
 				}
 				if (ball.position.y < 0) {
 					disc4.visible = true;
-					disc4.position.set( ball.position.x, -halfArenaHeight, ball.position.z );
+					disc4.position.set(ball.position.x, -halfArenaHeight, ball.position.z);
 					disc3.visible = false;
 				}
-						
-				
+
+
 			} //end if (bluePaddleMissed == false && redPaddleMissed == false && winnerCutScene == false)
-			
+
 			if (bluePaddleMissed || redPaddleMissed) {
 
-					disc1.visible = false;
-					disc2.visible = false;
-					disc3.visible = false;
-					disc4.visible = false;
+				disc1.visible = false;
+				disc2.visible = false;
+				disc3.visible = false;
+				disc4.visible = false;
 
-					missedTimer.run( frameTime );
+				missedTimer.run(frameTime);
 
-					if (missedTimer.alarmSounding){
-				
-						if(blueWins || redWins){
-							paddleWinSound.play({ volume: gameSoundVolume / 10.0 });
-							winCutSceneSound.play({ volume: gameSoundVolume / 10.0 });
-							camera.position.set(0,100,0);
-							bluePaddleMissed = false;
-							redPaddleMissed = false;
-							winnerCutScene = true;
-							
-							if(blueWins){
-								document.getElementById( "winner" ).style.color = "rgb(0,0,255)";
-							}
-							if(redWins){	
-								document.getElementById( "winner" ).style.color = "rgb(255,0,0)";
-							}
-							
-							document.getElementById( "winner" ).innerHTML = "WINNER!";
+				if (missedTimer.alarmSounding) {
+
+					if (blueWins || redWins) {
+						paddleWinSound.play({
+							volume: gameSoundVolume / 10.0
+						});
+						winCutSceneSound.play({
+							volume: gameSoundVolume / 10.0
+						});
+						camera.position.set(0, 100, 0);
+						bluePaddleMissed = false;
+						redPaddleMissed = false;
+						winnerCutScene = true;
+
+						if (blueWins) {
+							document.getElementById("winner").style.color = "rgb(0,0,255)";
 						}
-						else{
-							gameReset = true;
+						if (redWins) {
+							document.getElementById("winner").style.color = "rgb(255,0,0)";
 						}
-						
+
+						document.getElementById("winner").innerHTML = "WINNER!";
+					} else {
+						gameReset = true;
 					}
-					
-			}//end if(bluePaddleMissed || redPaddleMissed)
-			
+
+				}
+
+			} //end if(bluePaddleMissed || redPaddleMissed)
+
 			//keep players inside arena
 			if (bluePaddle.position.x > rightWall)
 				bluePaddle.position.x = rightWall;
@@ -651,7 +717,7 @@
 				redPaddle.position.y = topWall;
 			if (redPaddle.position.y < bottomWall)
 				redPaddle.position.y = bottomWall;
-				
+
 			/*
 			if (insideFlag == false){
 				insideCoef -= 1 * frameTime;
@@ -669,73 +735,73 @@
 				}
 			}
 			*/
-			
-			blueInsideCoef = 3 / ( bluePaddle.position.distanceToSquared( ball.position ) * 0.001 );
+
+			blueInsideCoef = 3 / (bluePaddle.position.distanceToSquared(ball.position) * 0.001);
 			if (blueInsideCoef < 1.15) blueInsideCoef = 1.15;
 			if (blueInsideCoef > 3) blueInsideCoef = 3;
 			blueInsideUniforms.coeficient.value = blueInsideCoef;
-			
-			redInsideCoef = 3 / ( redPaddle.position.distanceToSquared( ball.position ) * 0.001 );
+
+			redInsideCoef = 3 / (redPaddle.position.distanceToSquared(ball.position) * 0.001);
 			if (redInsideCoef < 1.15) redInsideCoef = 1.15;
 			if (redInsideCoef > 3) redInsideCoef = 3;
 			redInsideUniforms.coeficient.value = redInsideCoef;
-			
-			if (ballGlowFlag){
+
+			if (ballGlowFlag) {
 				ballInsideCoef -= 4.5 * frameTime;
-				if (ballInsideCoef < 1.1){
+				if (ballInsideCoef < 1.1) {
 					ballInsideCoef = 1.1;
 					ballGlowFlag = false;
 				}
 			}
-			
+
 			ballInsideUniforms.coeficient.value = ballInsideCoef;
-			
-			if(winnerCutScene == false)
-				camera.lookAt( bluePaddle.position );
-			
-			renderer.render( scene, camera );
+
+			if (winnerCutScene == false)
+				camera.lookAt(bluePaddle.position);
+
+			renderer.render(scene, camera);
 
 
-		}//end function animate()
+		} //end function animate()
 
 		function updateAI() {
-		
+
 			//the following 2 lines provide the simplest AI ever, but, the computer will never lose! :)
 			//redPaddle.position.x = ball.position.x;
 			//redPaddle.position.y = ball.position.y;
 
 			//the following is not much more complex, but makes it look like the computer is 'trying'
-			redPaddleDesiredDirection.subVectors( ball.position, redPaddle.position );
+			redPaddleDesiredDirection.subVectors(ball.position, redPaddle.position);
 			redPaddleDesiredDirection.normalize();
-			redPaddle.translateOnAxis( redPaddleDesiredDirection, redPaddleMaxSpeed * frameTime );
+			redPaddle.translateOnAxis(redPaddleDesiredDirection, redPaddleMaxSpeed * frameTime);
 			redPaddle.position.z = redPaddleFixedPosZ; //clamp redPaddle's z position to back wall
-			
+
 		}
 
-		function checkBallPaddleCollision( ballPos, paddlePos ) {
-		
-			if ( ballPos.x > (paddlePos.x - halfPaddleWidth - 4) && 
-				ballPos.x < (paddlePos.x + halfPaddleWidth + 4) && 
-				ballPos.y > (paddlePos.y - halfPaddleHeight - 4) && 
-				ballPos.y < (paddlePos.y + halfPaddleHeight + 4) )
+		function checkBallPaddleCollision(ballPos, paddlePos) {
+
+			if (ballPos.x > (paddlePos.x - halfPaddleWidth - 4) &&
+				ballPos.x < (paddlePos.x + halfPaddleWidth + 4) &&
+				ballPos.y > (paddlePos.y - halfPaddleHeight - 4) &&
+				ballPos.y < (paddlePos.y + halfPaddleHeight + 4))
 				return true;
 			else {
 				return false;
 			}
-			
+
 		}
 
-		function handleMiss( paddle ) {
-		
+		function handleMiss(paddle) {
+
 			if (paddle == bluePaddle) {
 				bluePaddleMissed = true;
 				redScore += 1;
-				document.getElementById( "redscore" ).innerHTML = redScore;	
+				document.getElementById("redscore").innerHTML = redScore;
 			}
 			if (paddle == redPaddle) {
 				redPaddleMissed = true;
 				blueScore += 1;
-				document.getElementById( "bluescore" ).innerHTML = blueScore;
+				document.getElementById("bluescore").innerHTML = blueScore;
 			}
 			if (redScore > 4) {
 				redWins = true;
@@ -743,29 +809,43 @@
 			if (blueScore > 4) {
 				blueWins = true;
 			}
-			
+
 		}
 
 		function updateHUD() {
+			var textFieldWidth = windowWidth / 5;
+			if (textFieldWidth > 300) textFieldWidth = 300;
+			if (textFieldWidth < 100) textFieldWidth = 100;
+			document.getElementById("textInput").style.width = textFieldWidth + "px";
 			
-			var fontAspect = (windowWidth / 200) * (windowHeight / 200);
-			if(fontAspect > 20) fontAspect = 20;
-			if(fontAspect < 10) fontAspect = 10;
+			var fontAspect = (windowWidth / 175) * (windowHeight / 200);
+			if (fontAspect > 20) fontAspect = 20;
+			if (fontAspect < 10) fontAspect = 10;
 			
-			document.getElementById( "gametitle" ).style.fontSize = fontAspect + "px";
-			document.getElementById( "gravity" ).style.fontSize = fontAspect + "px";
-			document.getElementById( "difficulty" ).style.fontSize = fontAspect + "px";
-			
+			document.getElementById("gametitle").style.fontSize = fontAspect + "px";
+			document.getElementById("gravity").style.fontSize = fontAspect + "px";
+			document.getElementById("difficulty").style.fontSize = fontAspect + "px";
+			document.getElementById("volume").style.fontSize = fontAspect + "px";
+
 			fontAspect *= 3;
-			document.getElementById( "bluescore" ).style.fontSize = fontAspect + "px";
-			document.getElementById( "redscore" ).style.fontSize = fontAspect + "px";
+			document.getElementById("bluescore").style.fontSize = fontAspect + "px";
+			document.getElementById("redscore").style.fontSize = fontAspect + "px";
+			document.getElementById("winner").style.fontSize = fontAspect + "px";
 			
-			document.getElementById( "winner" ).style.fontSize = fontAspect + "px";
+			fontAspect /= 4;
+			document.getElementById("help1").style.fontSize = fontAspect + "px";
+			document.getElementById("help2").style.fontSize = fontAspect + "px";
+			document.getElementById("chatLine1").style.fontSize = fontAspect + "px";
+			document.getElementById("chatLine2").style.fontSize = fontAspect + "px";
+			document.getElementById("chatLine3").style.fontSize = fontAspect + "px";
+			document.getElementById("chatLine4").style.fontSize = fontAspect + "px";
+			document.getElementById("textInput").style.fontSize = fontAspect + "px";
+			document.getElementById("submitButton").style.fontSize = fontAspect + "px";
 
 		}
 
 		function onWindowResize() {
-		
+
 			windowWidth = window.innerWidth;
 			windowHeight = window.innerHeight;
 
@@ -773,92 +853,91 @@
 			camera.updateProjectionMatrix();
 
 			updateHUD();
-			renderer.setSize( windowWidth, windowHeight );
-			
+			renderer.setSize(windowWidth, windowHeight);
+
 		}
-		
-		function gravityClickHandler(){
-		
+
+		function gravityClickHandler() {
+
 			gravityClicked = !gravityClicked;
-			
-			if(gravityClicked){
-				document.getElementById( "gravity" ).innerHTML = "Gravity ON";
-				document.getElementById( "gravity" ).style.color = "rgb(180,180,180)";
+
+			if (gravityClicked) {
+				document.getElementById("gravity").innerHTML = "Gravity ON";
+				document.getElementById("gravity").style.color = "rgb(180,180,180)";
 				gravityOn = true;
 			}
-			if(!gravityClicked){
- 				document.getElementById( "gravity" ).innerHTML = "Gravity OFF";
-				document.getElementById( "gravity" ).style.color = "rgb(100,100,100)";
+			if (!gravityClicked) {
+				document.getElementById("gravity").innerHTML = "Gravity OFF";
+				document.getElementById("gravity").style.color = "rgb(100,100,100)";
 				gravityOn = false;
 			}
-			
+
 		}
-		
-		function difficultyClickHandler(){
-		
+
+		function difficultyClickHandler() {
+
 			difficultyLevel += 1;
-			if(difficultyLevel > 3)
+			if (difficultyLevel > 3)
 				difficultyLevel = 0;
-		
-			switch (difficultyLevel){
+
+			switch (difficultyLevel) {
 				case 0:
-					document.getElementById( "difficulty" ).innerHTML = "Difficulty: EASY";
+					document.getElementById("difficulty").innerHTML = "Difficulty: EASY";
 					redPaddleMaxSpeed = 70;
 					break;
 				case 1:
-					document.getElementById( "difficulty" ).innerHTML = "Difficulty: MEDIUM";
+					document.getElementById("difficulty").innerHTML = "Difficulty: MEDIUM";
 					redPaddleMaxSpeed = 110;
 					break;
 				case 2:
-					document.getElementById( "difficulty" ).innerHTML = "Difficulty: HARD";
+					document.getElementById("difficulty").innerHTML = "Difficulty: HARD";
 					redPaddleMaxSpeed = 170;
 					break;
 				case 3:
-					document.getElementById( "difficulty" ).innerHTML = "Difficulty: EXPERT";
+					document.getElementById("difficulty").innerHTML = "Difficulty: EXPERT";
 					redPaddleMaxSpeed = 230;
 					break;
-				default: 
-					document.getElementById( "difficulty" ).innerHTML = "Difficulty: MEDIUM";
+				default:
+					document.getElementById("difficulty").innerHTML = "Difficulty: MEDIUM";
 					redPaddleMaxSpeed = 110;
-			}	
-			
+			}
+
 		}
-		
-		function volumeClickHandler(){
-		
+
+		function volumeClickHandler() {
+
 			soundLevel += 1;
-			if(soundLevel > 3)
+			if (soundLevel > 3)
 				soundLevel = 0;
-		
-			switch (soundLevel){
+
+			switch (soundLevel) {
 				case 0:
-					document.getElementById( "volume" ).innerHTML = "SoundLevel: OFF";
+					document.getElementById("volume").innerHTML = "SoundLevel: OFF";
 					gameSounds.lineOut.volume = 0.0;
 					gameSoundVolume = 0.0;
 					break;
 				case 1:
-					document.getElementById( "volume" ).innerHTML = "SoundLevel: LOW";
+					document.getElementById("volume").innerHTML = "SoundLevel: LOW";
 					gameSounds.lineOut.volume = 1.0;
 					gameSoundVolume = 0.4;
 					break;
 				case 2:
-					document.getElementById( "volume" ).innerHTML = "SoundLevel: MID";
+					document.getElementById("volume").innerHTML = "SoundLevel: MID";
 					gameSounds.lineOut.volume = 1.0;
 					gameSoundVolume = 0.8;
 					break;
 				case 3:
-					document.getElementById( "volume" ).innerHTML = "SoundLevel: HIGH";
+					document.getElementById("volume").innerHTML = "SoundLevel: HIGH";
 					gameSounds.lineOut.volume = 1.0;
 					gameSoundVolume = 1.0;
 					break;
-				default: 
-					document.getElementById( "volume" ).innerHTML = "SoundLevel: OFF";
+				default:
+					document.getElementById("volume").innerHTML = "SoundLevel: OFF";
 					gameSounds.lineOut.volume = 0.0;
 					gameSoundVolume = 0.0;
-			}	
-			
+			}
+
 		}
-		
 	</script>
 
 </body>
