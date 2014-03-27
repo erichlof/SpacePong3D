@@ -55,6 +55,10 @@
 	<div id="winner" style="position:fixed; left:40%; top:20%; font-family:arial; font-type:bold; color:black;">
 
 	</div>
+  
+	<div id="networkInfo" style="position:fixed; left:40%; top:20%; font-size:18px; font-family:arial; font-type:bold; color:blue;">
+
+	</div>
 
 	<input id="textInput" style="position:fixed; bottom:6%; font-size:10px;" placeholder="enter-your-name-here" onkeyup="textEnterHandler(true, event)">
 	<input id="submitButton" style="position:fixed; bottom:2%; font-size:10px;" type="button" value="Join Lobby" onclick="textEnterHandler(false, null)">
@@ -95,8 +99,8 @@
 		var clock = new THREE.Clock();
 		var missedTimer = new THREEx.GameTimer(3);
 		var cutSceneTimer = new THREEx.GameTimer(6);
-          	var presenceTimer = new THREEx.GameTimer(7);
-          	var runningPresence = false;
+		var hereNowTimer = new THREEx.GameTimer(7);
+		var runningHereNow = false;
 		var keyboard = new THREEx.KeyboardState();
 		var joystick = new VirtualJoystick({
 			mouseSupport: true,
@@ -376,14 +380,14 @@
 			requestAnimationFrame(animate);
 
 			frameTime = clock.getDelta();
-                  	
-                  	if (runningPresence){
-                  		presenceTimer.run(frameTime);
-                  		if (presenceTimer.alarmSounding){
-                  			runPresence();
-                  			runningPresence = false;
-                  		}
-                  	}
+			
+			if (runningHereNow){
+				hereNowTimer.run(frameTime);
+				if (hereNowTimer.alarmSounding){
+					runHereNow();
+					runningHereNow = false;
+				}
+			}
 
 			gameSounds.update(frameTime);
 
@@ -463,18 +467,18 @@
 
 			if (winnerCutScene == false) {
 
-				if (keyboard.pressed("D")) {
-					bluePaddle.position.x += 50 * frameTime;
-				}
-				if (keyboard.pressed("A")) {
-					bluePaddle.position.x -= 50 * frameTime;
-				}
-				if (keyboard.pressed("W")) {
-					bluePaddle.position.y += 50 * frameTime;
-				}
-				if (keyboard.pressed("S")) {
-					bluePaddle.position.y -= 50 * frameTime;
-				}
+				//if (keyboard.pressed("D")) {
+				//	bluePaddle.position.x += 50 * frameTime;
+				//}
+				//if (keyboard.pressed("A")) {
+				//	bluePaddle.position.x -= 50 * frameTime;
+				//}
+				//if (keyboard.pressed("W")) {
+				//	bluePaddle.position.y += 50 * frameTime;
+				//}
+				//if (keyboard.pressed("S")) {
+				//	bluePaddle.position.y -= 50 * frameTime;
+				//}
 
 				if (keyboard.pressed("M")) {
 					mouseControl = true;
