@@ -80,7 +80,7 @@
 	<script src="js/threex.texturecube.js"></script>
 	<script src="js/threex.skymap.js"></script>
 	<script src="js/threex.keyboardstate.js"></script>
-	<script src="js/virtualjoystick.js"></script>
+	<script src="js/pongVirtualJoystick.js"></script>
 	<script src="js/threex.GameTimer.js"></script>
 	<script src="js/threex.geometricglowmesh.js"></script>
 	<script src="js/webaudioxGameSounds.js"></script>
@@ -100,7 +100,9 @@
 		var missedTimer = new THREEx.GameTimer(3);
 		var cutSceneTimer = new THREEx.GameTimer(6);
 		var hereNowTimer = new THREEx.GameTimer(7);
+		var acceptTimer = new THREEx.GameTimer(20);
 		var runningHereNow = false;
+		var runningAcceptTimer = false;
 		var keyboard = new THREEx.KeyboardState();
 		var joystick = new VirtualJoystick({
 			mouseSupport: true,
@@ -112,8 +114,6 @@
 		});
 		renderer.setClearColor('rgb(0,0,0)', 1);
 		renderer.setSize(windowWidth, windowHeight);
-		 //renderer.domElement.style.position = "relative";
-		 //document.body.appendChild( renderer.domElement );
 		document.getElementById("container").appendChild(renderer.domElement);
 		window.addEventListener('resize', onWindowResize, false);
 
@@ -386,6 +386,14 @@
 				if (hereNowTimer.alarmSounding){
 					runHereNow();
 					runningHereNow = false;
+				}
+			}
+			
+			if (runningAcceptTimer){
+				acceptTimer.run(frameTime);
+				if (acceptTimer.alarmSounding){
+					checkIfMatchAccepted();
+					runningAcceptTimer = false;
 				}
 			}
 
