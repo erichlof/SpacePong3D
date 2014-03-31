@@ -16,6 +16,9 @@ var tempDiv = null;
 var tempId = null;
 var youAreInitiator = true;
 var youAreAcceptor = false;
+var matchAccepted = false;
+//var isPlayingAlready = false;
+var messageObject = {};
 
 function initNetwork() {
 
@@ -29,6 +32,7 @@ function initNetwork() {
 
 	youAreInitiator = true;
 	youAreAcceptor = false;
+	matchAccepted = false;
 
 	document.getElementById('textInput').placeholder = "enter-public-chat-message";
 
@@ -77,6 +81,16 @@ function textEnterHandler(enter, event) {
 			document.getElementById('textInput').placeholder = "enter-private-message";
 			document.getElementById('submitButton').value = "Send Message";
 
+			//Want to be able to do something like the following:	
+			//messageObject = {
+			//	"chat": chatMessage,
+			//	"data": 12
+			//};
+			//pubnub.publish({
+			//	user: opponentName,
+			//	message: messageObject
+			//});
+			
 			pubnub.publish({
 				user: opponentName,
 				message: chatMessage
@@ -123,25 +137,58 @@ function connectToLobby(playerName) {
 					if (gameAcceptor === playerName) {
 						youAreAcceptor = true;
 						youAreInitiator = false;
+						for (i = 0; i < playerDivs.length; i++) {
+							if(playerDivs[i].id !== gameInitiator){
+								tempId = document.getElementById(playerDivs[i].id);
+								if(tempId) tempId.style.color = "orange";
+							}
+						} 
 					}
-					if (gameInitiator === playerName) {
+					else if (gameInitiator === playerName) {
 						youAreInitiator = true;
 						youAreAcceptor = false;
+						for (i = 0; i < playerDivs.length; i++) {
+							tempId = document.getElementById(playerDivs[i].id);
+							if(tempId) tempId.style.color = "orange";
+						} 
+					}
+					else{
+						document.getElementById(gameInitiator).style.color = "brown";
+						document.getElementById(gameAcceptor).style.color = "brown";
 					}
 					chatLog(message.text);
 				}
 				if (message.type === "ifAccept") {
 					if (message.receiver === playerName) {
 						document.getElementById('networkInfo').innerHTML = message.text;
+						runningAcceptTimer = true;
+						acceptTimer.reset();
 					}
 				}
 				if (message.type === "gameAccepted") {
 					if (message.receiver === playerName) {
 						document.getElementById('networkInfo').innerHTML = message.text;
+						matchAccepted = true;
+						runningAcceptTimer = false;
 						connectToOpponent(opponentName);
 					}
 				}
-			} else chatLog(message);
+				if (message.type === "nowInGame") {
+					document.getElementById(message.player1).style.color = "purple";//purple = already playing
+					document.getElementById(message.player2).style.color = "purple";//purple = already playing
+					chatLog(message.text);
+				}
+				if (message.type === "whoIsPlaying"){
+					document.getElementById(message.player).style.color = "purple";//purple = already playing
+				}
+				if (message.type === "returningToLobby"){
+					if (message.player === playerName)
+						document.getElementById(message.player).style.color = "orange";
+					else document.getElementById(message.player).style.color = "yellow";
+					chatLog(message.player + " is returning to the lobby.");
+				}
+			}//end if (message.type)
+			else chatLog(message);
 		}, //end callback:
 		presence: function(presMessage, env, channel) {
 
@@ -160,6 +207,15 @@ function connectToLobby(playerName) {
 						};
 					}
 				}
+				if (playerName === gameInitiator || playerName === gameAcceptor){
+					pubnub.publish({
+						channel: "PongGameLobby",
+						message: {
+							type: "whoIsPlaying",
+							player: playerName
+						}
+					});
+				}
 			}
 			if (presMessage.action === 'join' && presMessage.uuid === playerName) {
 				myMessage = "Hi " + presMessage.uuid + ", welcome to " + channel + "!";
@@ -171,7 +227,6 @@ function connectToLobby(playerName) {
 
 				tempId = document.getElementById(presMessage.uuid);
 				document.body.removeChild(tempId);
-
 			}
 			if (presMessage.action === 'timeout') {
 				myMessage = presMessage.uuid + " has timed out.";
@@ -204,7 +259,11 @@ function runHereNow() {
 				playerDivs[i].style.position = "fixed";
 				playerDivs[i].style.top = (i + 1) * 3 + "%";
 				playerDivs[i].style.right = "2%";
-				if (m.uuids[i] === playerName)
+				if (m.uuids[i] === gameInitiator || m.uuids[i] === gameAcceptor)
+					playerDivs[i].style.color = "purple";
+				else if (document.getElementById(m.uuids[i]).style.color === "purple")//purple = already playing
+					playerDivs[i].style.color = "purple";//disable button for players who are already playing
+				else if (m.uuids[i] === playerName || playerName === gameAcceptor || playerName === gameInitiator)
 					playerDivs[i].style.color = "orange";
 				else playerDivs[i].style.color = "yellow";
 				playerDivs[i].style.fontSize = "12px";
@@ -230,64 +289,78 @@ function chatLog(message) {
 
 function opponentClickHandler(id) {
 
-	if (youAreInitiator) {
+	if (document.getElementById(id).style.color === "yellow") {
+	
+		if (youAreInitiator) {
 
-		document.getElementById('networkInfo').innerHTML = "Requesting a game with " + id + "...";
-		document.getElementById(id).style.color = "brown";
-		myMessage = playerName + " wants to play a game with " + id;
-		pubnub.publish({
-			channel: "PongGameLobby",
-			message: {
-				type: "gameRequest",
-				sender: playerName,
-				receiver: id,
-				text: myMessage
-			}
-		});
+			document.getElementById('networkInfo').innerHTML = "Requesting a game with " + id + "...";
+			document.getElementById(id).style.color = "brown";
+			myMessage = playerName + " wants to play a game with " + id;
+			pubnub.publish({
+				channel: "PongGameLobby",
+				message: {
+					type: "gameRequest",
+					sender: playerName,
+					receiver: id,
+					text: myMessage
+				}
+			});
 
 
-		myMessage = playerName + " wants to play. If you accept, click on the name " + playerName + " -->";
-		pubnub.publish({
-			channel: "PongGameLobby",
-			message: {
-				type: "ifAccept",
-				sender: playerName,
-				receiver: id,
-				text: myMessage
-			}
-		});
+			myMessage = playerName + " wants to play. If you accept, click on the name " + playerName + " -->";
+			pubnub.publish({
+				channel: "PongGameLobby",
+				message: {
+					type: "ifAccept",
+					sender: playerName,
+					receiver: id,
+					text: myMessage
+				}
+			});
 
-		opponentName = id;
-		///connectToOpponent(id);
+			opponentName = id;
 
-	} //end if (youAreInitiator)
+			runningAcceptTimer = true;
+			acceptTimer.reset();
 
-	if (youAreAcceptor && id === gameInitiator) {
 
-		document.getElementById('networkInfo').innerHTML = "Connecting to " + id + " ...";
-		document.getElementById(id).style.color = "brown";
-		myMessage = playerName + " and " + id + " are now in a game.";
-		pubnub.publish({
-			channel: "PongGameLobby",
-			message: myMessage
-		});
 
-		myMessage = playerName + " has accepted!  Connecting...";
-		pubnub.publish({
-			channel: "PongGameLobby",
-			message: {
-				type: "gameAccepted",
-				sender: playerName,
-				receiver: id,
-				text: myMessage
-			}
-		});
+		} //end if (youAreInitiator)
 
-		opponentName = id;
-		connectToOpponent(id);
+		if (youAreAcceptor && id === gameInitiator) {
 
-	} //end if (youAreAcceptor)
+			document.getElementById('networkInfo').innerHTML = "Connecting to " + id + " ...";
+			document.getElementById(id).style.color = "brown";
+			myMessage = playerName + " and " + id + " are now in a game.";
+			pubnub.publish({
+				channel: "PongGameLobby",
+				message: {
+					type: "nowInGame",
+					player1: playerName,
+					player2: id,
+					text: myMessage
+				}
+			});
 
+			myMessage = playerName + " has accepted!  Connecting...";
+			pubnub.publish({
+				channel: "PongGameLobby",
+				message: {
+					type: "gameAccepted",
+					sender: playerName,
+					receiver: id,
+					text: myMessage
+				}
+			});
+
+			matchAccepted = true;
+			opponentName = id;
+			connectToOpponent(id);
+
+		} //end if (youAreAcceptor)
+		
+	} //end if (document.getElementById(id).style.color === "yellow")
+	
 } //end function opponentClickHandler(id)
 
 
@@ -296,6 +369,9 @@ function connectToOpponent(opponent) {
 	pubnub.subscribe({
 		user: opponent,
 		callback: function(message) {
+			//myMessage = message.chat;
+			//chatLog(myMessage);
+
 			chatLog(message);
 			//need to be able to get game-specific data through here besides chat...
 		},
@@ -309,6 +385,13 @@ function connectToOpponent(opponent) {
 			});
 			myMessage = opponent + " has disconnected from you. Going back to Lobby...";
 			document.getElementById('networkInfo').innerHTML = myMessage;
+			pubnub.publish({
+				channel: "PongGameLobby",
+				message: {
+					type: "returningToLobby",
+					player: playerName
+				}
+			});
 
 			initNetwork();
 			runningHereNow = true;
@@ -329,3 +412,41 @@ function connectToOpponent(opponent) {
 	playingAndChatting = true;
 
 } //end function connectToOpponent(opponent)
+
+function checkIfMatchAccepted() {
+
+	if (youAreInitiator) {
+		if (matchAccepted === false) {
+			myMessage = opponentName + " did not accept the match. Going back to Lobby...";
+			document.getElementById('networkInfo').innerHTML = myMessage;
+			//document.getElementById(opponentName).style.color = "yellow";
+			pubnub.publish({
+				channel: "PongGameLobby",
+				message: {
+					type: "returningToLobby",
+					player: playerName
+				}
+			});
+			initNetwork();
+			runningHereNow = true;
+			hereNowTimer.reset();
+		}
+	}
+	if (youAreAcceptor) {
+		if (matchAccepted === false) {
+			myMessage = "You did not accept the match. Going back to Lobby...";
+			document.getElementById('networkInfo').innerHTML = myMessage;
+			pubnub.publish({
+				channel: "PongGameLobby",
+				message: {
+					type: "returningToLobby",
+					player: playerName
+				}
+			});
+			initNetwork();
+			runningHereNow = true;
+			hereNowTimer.reset();
+		}
+	}
+	
+}// end function checkIfMatchAccepted()
