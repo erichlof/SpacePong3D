@@ -87,7 +87,7 @@
 	<script src="http://cdn.pubnub.com/pubnub.min.js"></script>
 
 	<script src="js/webrtc-beta-pubnub.0.7.0.min.js"></script>
-	<script src="js/SpacePongNetwork.js"></script>
+	
 
 	<script>
 		var windowWidth = window.innerWidth;
@@ -101,6 +101,10 @@
 		var cutSceneTimer = new THREEx.GameTimer(6);
 		var hereNowTimer = new THREEx.GameTimer(7);
 		var acceptTimer = new THREEx.GameTimer(20);
+		var beginBannerTimer = new THREEx.GameTimer(3);
+		var networkTimer = new THREEx.GameTimer(0.5);
+		var showingBeginBanner = false;
+		var runningNetworkGame = false;
 		var runningHereNow = false;
 		var runningAcceptTimer = false;
 		var keyboard = new THREEx.KeyboardState();
@@ -161,9 +165,8 @@
 		var redWins = false;
 		var winnerCutScene = false;
 		var cameraAngle = 0;
-
-		 //var skybox = THREEx.createSkymap( 'skybox' )
-		 //scene.add( skybox );
+		var youAreBlue = true;
+	    
 		var skyCubeTexture = THREEx.createTextureCube([
 			'images/skybox/moondust-xpos.png', 'images/skybox/moondust-xneg.png',
 			'images/skybox/moondust-ypos.png', 'images/skybox/moondust-yneg.png',
@@ -309,8 +312,6 @@
 
 		updateHUD();
 
-		camera.position.z = 160;
-
 		bluePaddle.position.x = 0.0;
 		bluePaddle.position.y = 0.0;
 		bluePaddleFixedPosZ = arenaDepth / 2 + paddleDepth;
@@ -320,6 +321,8 @@
 		redPaddle.position.y = 0.0;
 		redPaddleFixedPosZ = -arenaDepth / 2 - paddleDepth;
 		redPaddle.position.z = redPaddleFixedPosZ;
+			
+		camera.position.z = bluePaddleFixedPosZ + 56;
 
 		disc1.position.set(halfArenaWidth, 0, 0);
 		disc1.rotation.set(0, Math.PI / -2, 0);
@@ -364,6 +367,8 @@
 
 		var allSoundsLoaded = false;
 		
+		
+		
 		animate();
 
 
@@ -380,6 +385,22 @@
 			requestAnimationFrame(animate);
 
 			frameTime = clock.getDelta();
+			
+			if(runningNetworkGame){
+				networkTimer.run(frameTime);
+				if (networkTimer.alarmSounding){
+					updateNetwork();
+					//networkTimer.reset();
+				}
+			}
+			
+			if(showingBeginBanner){
+				beginBannerTimer.run(frameTime);
+				if (beginBannerTimer.alarmSounding){
+					document.getElementById('networkInfo').innerHTML = "";
+					showingBeginBanner = false;
+				}
+			}
 			
 			if (runningHereNow){
 				hereNowTimer.run(frameTime);
@@ -436,7 +457,10 @@
 
 			if (gameReset) {
 				cameraAngle = 0;
-				camera.position.set(0, 0, 160);
+				if (youAreBlue)
+					camera.position.set(0, 0, bluePaddleFixedPosZ + 56);
+				else camera.position.set(0, 0, redPaddleFixedPosZ - 56);
+			
 				ball.position.set(0, 0, 0);
 
 				if (difficultyLevel == 0)
@@ -475,19 +499,6 @@
 
 			if (winnerCutScene == false) {
 
-				//if (keyboard.pressed("D")) {
-				//	bluePaddle.position.x += 50 * frameTime;
-				//}
-				//if (keyboard.pressed("A")) {
-				//	bluePaddle.position.x -= 50 * frameTime;
-				//}
-				//if (keyboard.pressed("W")) {
-				//	bluePaddle.position.y += 50 * frameTime;
-				//}
-				//if (keyboard.pressed("S")) {
-				//	bluePaddle.position.y -= 50 * frameTime;
-				//}
-
 				if (keyboard.pressed("M")) {
 					mouseControl = true;
 				}
@@ -506,8 +517,14 @@
 					if (joystick._pressed) {
 
 						if (firstTouchMove == false) {
-							bluePaddle.position.x += (deltaXDifference / joystickDampening);
-							bluePaddle.position.y -= (deltaYDifference / joystickDampening);
+							if (youAreBlue) {
+								bluePaddle.position.x += (deltaXDifference / joystickDampening);
+								bluePaddle.position.y -= (deltaYDifference / joystickDampening);
+							}
+							if (!youAreBlue) {
+								redPaddle.position.x -= (deltaXDifference / joystickDampening);
+								redPaddle.position.y -= (deltaYDifference / joystickDampening);
+							}
 						} else if (firstTouchMove == true) {
 							//did the player swipe yet?
 							if (Math.abs(deltaXDifference) > 0 || Math.abs(deltaYDifference) > 0) {
@@ -540,7 +557,8 @@
 
 			if (bluePaddleMissed == false && redPaddleMissed == false && winnerCutScene == false) {
 
-				updateAI();
+				if(!runningNetworkGame)
+					updateAI();
 				//back wall Red Paddle
 				if ((ball.position.z - ballRadius) < redPaddle.position.z) {
 					ball.position.z = redPaddle.position.z + ballRadius;
@@ -697,12 +715,16 @@
 
 						if (blueWins) {
 							document.getElementById("winner").style.color = "rgb(0,0,255)";
+							if (youAreBlue) winnerName = playerName;
+							else winnerName = opponentName;
 						}
 						if (redWins) {
 							document.getElementById("winner").style.color = "rgb(255,0,0)";
+							if (youAreBlue) winnerName = opponentName;
+							else winnerName = playerName;
 						}
 
-						document.getElementById("winner").innerHTML = "WINNER!";
+						document.getElementById("winner").innerHTML = winnerName + " WINS!";
 					} else {
 						gameReset = true;
 					}
@@ -768,8 +790,10 @@
 
 			ballInsideUniforms.coeficient.value = ballInsideCoef;
 
-			if (winnerCutScene == false)
+			if (winnerCutScene == false && youAreBlue)
 				camera.lookAt(bluePaddle.position);
+			else if (winnerCutScene == false && !youAreBlue)
+				camera.lookAt(redPaddle.position);
 
 			renderer.render(scene, camera);
 
@@ -950,7 +974,11 @@
 			}
 
 		}
+		
+		
 	</script>
+	
+	<script src="js/SpacePongNetwork.js"></script>
 
 </body>
 
