@@ -1,10 +1,18 @@
+//NETWORK VARIABLES///////////////////////////////////////////////////
 var pubnub = null;
-var playerName = "";
-var opponentName = "";
+var playerName = "Player";
+var opponentName = "Computer";
 var gameInitiator = "";
 var gameAcceptor = "";
 var myMessage = "";
 var chatMessage = "";
+var dataMessage = "";
+var gameStateMessage = "";
+var slicedMessage = "";
+var stringSlicePoints = new Array();
+var currentVar = 0;
+var variableCounter = 0;
+
 var chat2 = null;
 var chat3 = null;
 var chat4 = null;
@@ -17,22 +25,27 @@ var tempId = null;
 var youAreInitiator = true;
 var youAreAcceptor = false;
 var matchAccepted = false;
-//var isPlayingAlready = false;
-var messageObject = {};
+	
+
 
 function initNetwork() {
 
-	opponentName = "";
+	opponentName = "Computer";
 	gameInitiator = "";
 	gameAcceptor = "";
 	myMessage = "";
 	chatMessage = "";
 	chatting = true;
 	playingAndChatting = false;
+	runningNetworkGame = false;
 
 	youAreInitiator = true;
 	youAreAcceptor = false;
+	youAreBlue = true;
 	matchAccepted = false;
+	
+	gameReset = true;
+	resetScores = true;
 
 	document.getElementById('textInput').placeholder = "enter-public-chat-message";
 
@@ -61,6 +74,8 @@ function textEnterHandler(enter, event) {
 		if (chatting) {
 
 			chatMessage = playerName + ": '" + document.getElementById('textInput').value + "'";
+			chatMessage = chatMessage.slice(0, 80);
+			
 			document.getElementById('textInput').value = "";
 			document.getElementById('textInput').placeholder = "enter-public-chat-message";
 			document.getElementById('submitButton').value = "Send Message";
@@ -74,40 +89,35 @@ function textEnterHandler(enter, event) {
 
 		if (playingAndChatting) {
 
-			//chatMessage = document.getElementById('textInput').value;
-			chatMessage = playerName + ": '" + document.getElementById('textInput').value + "'";
-
+			myMessage = playerName + ": '" + document.getElementById('textInput').value + "'";
+			myMessage = myMessage.slice(0, 82);
+			chatLog(myMessage);
+			
+			chatMessage = "C," + myMessage;
+			chatMessage = chatMessage.slice(0, 80);
+			
 			document.getElementById('textInput').value = "";
 			document.getElementById('textInput').placeholder = "enter-private-message";
 			document.getElementById('submitButton').value = "Send Message";
 
-			//Want to be able to do something like the following:	
-			//messageObject = {
-			//	"chat": chatMessage,
-			//	"data": 12
-			//};
-			//pubnub.publish({
-			//	user: opponentName,
-			//	message: messageObject
-			//});
-			
 			pubnub.publish({
 				user: opponentName,
 				message: chatMessage
 			});
-
-			chatLog(chatMessage);
 
 		}
 
 		if (connectingToLobby) {
 
 			playerName = document.getElementById('textInput').value;
+			playerName = playerName.slice(0,20);
+			
 			document.getElementById('textInput').value = "";
 			document.getElementById('textInput').placeholder = "enter-public-chat-message";
 			document.getElementById('submitButton').value = "Send Message";
 			document.getElementById('networkInfo').style.color = "blue";
 			document.getElementById('networkInfo').innerHTML = "Connecting to lobby...";
+			
 			connectToLobby(playerName);
 
 		}
@@ -168,8 +178,15 @@ function connectToLobby(playerName) {
 				if (message.type === "gameAccepted") {
 					if (message.receiver === playerName) {
 						document.getElementById('networkInfo').innerHTML = message.text;
+						myMessage = "Begin!";
+						document.getElementById('networkInfo').innerHTML = myMessage;
+						gameReset = true;
+						resetScores = true;
+						beginBannerTimer.reset();
+						showingBeginBanner = true;
 						matchAccepted = true;
 						runningAcceptTimer = false;
+						runningNetworkGame = true;
 						connectToOpponent(opponentName);
 					}
 				}
@@ -319,7 +336,7 @@ function opponentClickHandler(id) {
 			});
 
 			opponentName = id;
-
+			
 			runningAcceptTimer = true;
 			acceptTimer.reset();
 
@@ -352,9 +369,19 @@ function opponentClickHandler(id) {
 					text: myMessage
 				}
 			});
-
+			
+			myMessage = "Begin!";
+			document.getElementById('networkInfo').innerHTML = myMessage;
+			gameReset = true;
+			resetScores = true;
+			youAreBlue = false;
+			beginBannerTimer.reset();
+			showingBeginBanner = true;
+			networkTimer.reset();
+			
 			matchAccepted = true;
 			opponentName = id;
+			runningNetworkGame = true;
 			connectToOpponent(id);
 
 		} //end if (youAreAcceptor)
@@ -369,15 +396,58 @@ function connectToOpponent(opponent) {
 	pubnub.subscribe({
 		user: opponent,
 		callback: function(message) {
-			//myMessage = message.chat;
-			//chatLog(myMessage);
+		
+			switch ( message.charAt(0) ) {
+				case "D":
+					for (var i = 0, stringPos = 0; stringPos < message.length; stringPos++) {
+						if(message.charAt(stringPos) == ","){
+							stringSlicePoints[i] = stringPos;
+							i++;
+							commaCounter = i;
+						}
+					}
+					for (i = 0; i < commaCounter; i++) {
+						
+						if(i === 0) {
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							if (youAreBlue) redPaddle.position.x = parseInt(slicedMessage, 10);
+							else bluePaddle.position.x = parseInt(slicedMessage, 10);
+						}	
+						if(i === 1){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							if (youAreBlue) redPaddle.position.y = parseInt(slicedMessage, 10);
+							else bluePaddle.position.y = parseInt(slicedMessage, 10);
+						}
+						if(i === 2){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							if (!youAreBlue) ball.position.x = parseInt(slicedMessage, 10);
+						}
+						if(i === 3){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							if (!youAreBlue) ball.position.y = parseInt(slicedMessage, 10);
+						}
+						if(i === 4){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							if (!youAreBlue) ball.position.z = parseInt(slicedMessage, 10);
+						}
+					}
 
-			chatLog(message);
-			//need to be able to get game-specific data through here besides chat...
+					break;
+				case "C":
+					chatLog( message.slice(2) );
+					break;
+				case "G":
+					//gameStateMessage = message.slice(2);
+					//gameState = gameStateMessage;
+					break;
+				default:
+					chatLog( message.slice(2) );
+			}
+			
 		},
 		connect: function(uuid, peerConnection) {
-			myMessage = "Get Ready...";
-			document.getElementById('networkInfo').innerHTML = myMessage;
+			//myMessage = "Begin!";
+			//document.getElementById('networkInfo').innerHTML = myMessage;
 		},
 		disconnect: function(uuid, peerConnection) {
 			pubnub.unsubscribe({
@@ -399,7 +469,7 @@ function connectToOpponent(opponent) {
 		}
 	});
 
-	myMessage = playerName + ": 'Hello, " + opponent + " - good luck!'";
+	myMessage = "C," + playerName + ": 'Hello, " + opponent + " - good luck!'";
 
 	pubnub.publish({
 		user: opponent,
@@ -450,3 +520,20 @@ function checkIfMatchAccepted() {
 	}
 	
 }// end function checkIfMatchAccepted()
+
+
+function updateNetwork() {
+	if(youAreBlue)
+		dataMessage = "D," + bluePaddle.position.x + "," + bluePaddle.position.y + "," + 
+				ball.position.x + "," + ball.position.y + "," + ball.position.z;
+	if(!youAreBlue)
+		dataMessage = "D," + redPaddle.position.x + "," + redPaddle.position.y + "," + 
+				ball.position.x + "," + ball.position.y + "," + ball.position.z;
+	pubnub.publish({
+		user: opponentName,
+		message: dataMessage
+	});
+	
+	networkTimer.reset();
+
+}//end function updateNetwork()
