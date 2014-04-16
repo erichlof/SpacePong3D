@@ -86,7 +86,7 @@
 	<script src="js/webaudioxGameSounds.js"></script>
 	<script src="http://cdn.pubnub.com/pubnub.min.js"></script>
 
-	<script src="js/webrtc-beta-pubnub.0.7.0.min.js"></script>
+	<script src="js/webrtc-beta-pubnub.0.7.0.js"></script>
 	
 
 	<script>
@@ -102,7 +102,7 @@
 		var hereNowTimer = new THREEx.GameTimer(7);
 		var acceptTimer = new THREEx.GameTimer(20);
 		var beginBannerTimer = new THREEx.GameTimer(3);
-		var networkTimer = new THREEx.GameTimer(0.5);
+		var networkTimer = new THREEx.GameTimer(0.08);
 		var showingBeginBanner = false;
 		var runningNetworkGame = false;
 		var runningHereNow = false;
@@ -166,7 +166,9 @@
 		var winnerCutScene = false;
 		var cameraAngle = 0;
 		var youAreBlue = true;
-	    
+		var ballTowardsBlue = true;
+		var sentGameState = false;
+	    
 		var skyCubeTexture = THREEx.createTextureCube([
 			'images/skybox/moondust-xpos.png', 'images/skybox/moondust-xneg.png',
 			'images/skybox/moondust-ypos.png', 'images/skybox/moondust-yneg.png',
@@ -373,6 +375,8 @@
 
 
 		function animate() {
+			//debug output
+			//document.getElementById('networkInfo').innerHTML = "towardsBlue: " + ballTowardsBlue;
 
 			if (!allSoundsLoaded) {
 				if (bounceSound.loaded && paddleHitSound.loaded && paddleMissSound.loaded &&
@@ -386,13 +390,7 @@
 
 			frameTime = clock.getDelta();
 			
-			if(runningNetworkGame){
-				networkTimer.run(frameTime);
-				if (networkTimer.alarmSounding){
-					updateNetwork();
-					//networkTimer.reset();
-				}
-			}
+			
 			
 			if(showingBeginBanner){
 				beginBannerTimer.run(frameTime);
@@ -423,6 +421,7 @@
 			if (winnerCutScene) {
 
 				cameraAngle += frameTime;
+				if (cameraAngle >= 360) cameraAngle = 0;
 
 				bluePaddle.position.x = 0.0;
 				bluePaddle.position.y = 0.0;
@@ -443,6 +442,8 @@
 					camera.position.z = redPaddle.position.z + Math.cos(cameraAngle) * 50;
 				}
 				camera.position.y = -30;
+			
+				document.getElementById("winner").innerHTML = winnerName + " WINS!";
 
 				cutSceneTimer.run(frameTime);
 
@@ -456,12 +457,21 @@
 			}
 
 			if (gameReset) {
+				
+				if (resetScores) {
+					blueScore = 0;
+					redScore = 0;
+					ballTowardsBlue = true;
+					resetScores = false;
+				}
+				
 				cameraAngle = 0;
 				if (youAreBlue)
 					camera.position.set(0, 0, bluePaddleFixedPosZ + 56);
 				else camera.position.set(0, 0, redPaddleFixedPosZ - 56);
 			
 				ball.position.set(0, 0, 0);
+				ballDirection.set(0, 0, 0);
 
 				if (difficultyLevel == 0)
 					ballSpeed = 70;
@@ -471,27 +481,56 @@
 					ballSpeed = 100;
 				if (difficultyLevel == 3)
 					ballSpeed = 130;
-
-				ballDirection.x = 1 - Math.random() * 2;
-				ballDirection.y = 1 - Math.random() * 2;
-				ballDirection.z = -1.5;
-				ballDirection.normalize();
+				
+				
+			
+				if (!runningNetworkGame) {
+					if(bluePaddleMissed) ballTowardsBlue = false;
+					else if(redPaddleMissed) ballTowardsBlue = true;
+					else ballTowardsBlue = false;
+					
+					ballDirection.x = 1 - Math.random() * 2;
+					ballDirection.y = 1 - Math.random() * 2;
+					if (!ballTowardsBlue)
+						ballDirection.z = -1.5;
+					else ballDirection.z = 1.5;
+					ballDirection.normalize();
+				}
+				if (runningNetworkGame) {
+			
+					if( (youAreBlue && ballTowardsBlue) || (!youAreBlue && !ballTowardsBlue) ) {
+			
+						if(bluePaddleMissed) ballTowardsBlue = false;
+						else if(redPaddleMissed) ballTowardsBlue = true;
+						else ballTowardsBlue = false;
+			
+						ballDirection.x = 1 - Math.random() * 2;
+						ballDirection.y = 1 - Math.random() * 2;
+						if (!ballTowardsBlue)
+							ballDirection.z = -1.5;
+						else ballDirection.z = 1.5;
+						ballDirection.normalize();
+						
+						updateNetwork();
+						//sendGameState();
+					}
+					
+				}
 
 				bluePaddleMissed = false;
 				redPaddleMissed = false;
 				blueWins = false;
 				redWins = false;
 				missedTimer.reset();
-				if (resetScores) {
-					blueScore = 0;
-					redScore = 0;
-					resetScores = false;
-				}
+				
 
 				document.getElementById("bluescore").innerHTML = blueScore;
 				document.getElementById("redscore").innerHTML = redScore;
 
 				document.getElementById("winner").innerHTML = "";
+			
+				//if(runningNetworkGame)
+				//	updateNetwork();
 
 				gameReset = false;
 
@@ -546,125 +585,165 @@
 
 			} //end if(winnerCutScene == false)
 
-			//gravity effect
-			if (gravityOn)
-				ballDirection.y -= 0.3 * frameTime;
-
-			ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
-
-
-
+			//move ball with optional gravity effect
+			if (!runningNetworkGame) {
+			
+				if(gravityOn)
+					ballDirection.y -= 0.3 * frameTime;
+			
+				ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
+			
+			}
+			else if (runningNetworkGame) {
+			
+				///if ( (youAreBlue && ballTowardsBlue) || (!youAreBlue && !ballTowardsBlue) )
+					ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
+				
+			}
+			
 
 			if (bluePaddleMissed == false && redPaddleMissed == false && winnerCutScene == false) {
 
 				if(!runningNetworkGame)
 					updateAI();
-				//back wall Red Paddle
-				if ((ball.position.z - ballRadius) < redPaddle.position.z) {
-					ball.position.z = redPaddle.position.z + ballRadius;
+			
+				
+					if (!runningNetworkGame || (!youAreBlue && !ballTowardsBlue) ){
+						//back wall Red Paddle
+						if ((ball.position.z - ballRadius) < redPaddle.position.z) {
+							ball.position.z = redPaddle.position.z + ballRadius;
 
-					collisionResult = checkBallPaddleCollision(ball.position, redPaddle.position);
-					if (collisionResult === true) {
-						paddleHitSound.play({
-							volume: gameSoundVolume * 3,
+							collisionResult = checkBallPaddleCollision(ball.position, redPaddle.position);
+							if (collisionResult === true) {
+								paddleHitSound.play({
+									volume: gameSoundVolume * 3,
+									position: ball.position
+								});
+								ballDirection.reflect(backTriangleNormal);
+								//allow steering
+								ballDirection.x += redPaddleDesiredDirection.x;
+								ballDirection.y += redPaddleDesiredDirection.y;
+								ballDirection.z += (Math.abs(redPaddleDesiredDirection.x) + Math.abs(redPaddleDesiredDirection.y));
+								ballDirection.normalize();
+								updateNetwork();
+								//slightly increase ball speed every volley
+								ballSpeed *= 1.03;
+								ballGlowFlag = true;
+								ballInsideCoef = 2.2;
+
+								ballTowardsBlue = true;
+								
+							} else {
+								paddleMissSound.play({
+									volume: gameSoundVolume * 5,
+									position: ball.position
+								});
+								handleMiss(redPaddle);
+								if(runningNetworkGame){
+									sendGameState();
+									//sentGameState = true;
+									//ballTowardsBlue = true;
+								}
+							}
+						}
+					}//end if (!runningNetworkGame || (!youAreBlue && !ballTowardsBlue) )
+			
+					if (!runningNetworkGame || (youAreBlue && ballTowardsBlue) ){
+						//front wall Blue Paddle
+						if ((ball.position.z + ballRadius) > bluePaddle.position.z) {
+							ball.position.z = bluePaddle.position.z - ballRadius;
+
+							collisionResult = checkBallPaddleCollision(ball.position, bluePaddle.position);
+							if (collisionResult === true) {
+								paddleHitSound.play({
+									volume: gameSoundVolume * 3,
+									position: ball.position
+								});
+								ballDirection.reflect(frontTriangleNormal);
+								//allow steering
+								ballDirection.x += deltaXDifference;
+								ballDirection.y -= deltaYDifference;
+								ballDirection.z -= (Math.abs(deltaXDifference) + Math.abs(deltaYDifference));
+								ballDirection.normalize();
+								updateNetwork();
+								//slightly increase ball speed every volley
+								ballSpeed *= 1.03;
+								ballGlowFlag = true;
+								ballInsideCoef = 2.2;
+
+								ballTowardsBlue = false;
+								
+							} else {
+								paddleMissSound.play({
+									volume: gameSoundVolume * 5,
+									position: ball.position
+								});
+								handleMiss(bluePaddle);
+								if(runningNetworkGame){
+									sendGameState();
+									//sentGameState = true;
+									//ballTowardsBlue = false;
+								}
+							}
+						}
+					}//end if (!runningNetworkGame && (youAreBlue && ballTowardsBlue) )
+			
+				if (!runningNetworkGame || (!youAreBlue && !ballTowardsBlue) || (youAreBlue && ballTowardsBlue) ){
+
+					//left wall
+					if ((ball.position.x - ballRadius) < -halfArenaWidth) {
+						bounceSound.play({
+							volume: gameSoundVolume,
 							position: ball.position
 						});
-						ballDirection.reflect(backTriangleNormal);
-						//allow steering
-						ballDirection.x += redPaddleDesiredDirection.x;
-						ballDirection.y += redPaddleDesiredDirection.y;
-						ballDirection.z += (Math.abs(redPaddleDesiredDirection.x) + Math.abs(redPaddleDesiredDirection.y));
+						ball.position.x = -halfArenaWidth + ballRadius;
+						ballDirection.reflect(leftTriangleNormal);
 						ballDirection.normalize();
-						//slightly increase ball speed every volley
-						ballSpeed *= 1.03;
 						ballGlowFlag = true;
 						ballInsideCoef = 2.2;
-					} else {
-						paddleMissSound.play({
-							volume: gameSoundVolume * 5,
-							position: ball.position
-						});
-						handleMiss(redPaddle);
-					}
-				}
-				//front wall Blue Paddle
-				if ((ball.position.z + ballRadius) > bluePaddle.position.z) {
-					ball.position.z = bluePaddle.position.z - ballRadius;
 
-					collisionResult = checkBallPaddleCollision(ball.position, bluePaddle.position);
-					if (collisionResult === true) {
-						paddleHitSound.play({
-							volume: gameSoundVolume * 3,
+					}
+					//right wall
+					if ((ball.position.x + ballRadius) > halfArenaWidth) {
+						bounceSound.play({
+							volume: gameSoundVolume,
 							position: ball.position
 						});
-						ballDirection.reflect(frontTriangleNormal);
-						//allow steering
-						ballDirection.x += deltaXDifference;
-						ballDirection.y -= deltaYDifference;
-						ballDirection.z -= (Math.abs(deltaXDifference) + Math.abs(deltaYDifference));
+						ball.position.x = halfArenaWidth - ballRadius;
+						ballDirection.reflect(rightTriangleNormal);
 						ballDirection.normalize();
-						//slightly increase ball speed every volley
-						ballSpeed *= 1.03;
 						ballGlowFlag = true;
 						ballInsideCoef = 2.2;
-					} else {
-						paddleMissSound.play({
-							volume: gameSoundVolume * 5,
+
+					}
+					//bottom wall
+					if ((ball.position.y - ballRadius) < -halfArenaHeight) {
+						bounceSound.play({
+							volume: gameSoundVolume,
 							position: ball.position
 						});
-						handleMiss(bluePaddle);
+						ball.position.y = -halfArenaHeight + ballRadius;
+						ballDirection.reflect(bottomTriangleNormal);
+						ballDirection.normalize();
+						ballGlowFlag = true;
+						ballInsideCoef = 2.2;
+
 					}
-				}
-				//left wall
-				if ((ball.position.x - ballRadius) < -halfArenaWidth) {
-					bounceSound.play({
-						volume: gameSoundVolume,
-						position: ball.position
-					});
-					ball.position.x = -halfArenaWidth + ballRadius;
-					ballDirection.reflect(leftTriangleNormal);
-					ballDirection.normalize();
-					ballGlowFlag = true;
-					ballInsideCoef = 2.2;
-				}
-				//right wall
-				if ((ball.position.x + ballRadius) > halfArenaWidth) {
-					bounceSound.play({
-						volume: gameSoundVolume,
-						position: ball.position
-					});
-					ball.position.x = halfArenaWidth - ballRadius;
-					ballDirection.reflect(rightTriangleNormal);
-					ballDirection.normalize();
-					ballGlowFlag = true;
-					ballInsideCoef = 2.2;
-				}
-				//bottom wall
-				if ((ball.position.y - ballRadius) < -halfArenaHeight) {
-					bounceSound.play({
-						volume: gameSoundVolume,
-						position: ball.position
-					});
-					ball.position.y = -halfArenaHeight + ballRadius;
-					ballDirection.reflect(bottomTriangleNormal);
-					ballDirection.normalize();
-					ballGlowFlag = true;
-					ballInsideCoef = 2.2;
-				}
-				//top wall
-				if ((ball.position.y + ballRadius) > halfArenaHeight) {
-					bounceSound.play({
-						volume: gameSoundVolume,
-						position: ball.position
-					});
-					ball.position.y = halfArenaHeight - ballRadius;
-					ballDirection.reflect(topTriangleNormal);
-					ballDirection.normalize();
-					ballGlowFlag = true;
-					ballInsideCoef = 2.2;
-				}
+					//top wall
+					if ((ball.position.y + ballRadius) > halfArenaHeight) {
+						bounceSound.play({
+							volume: gameSoundVolume,
+							position: ball.position
+						});
+						ball.position.y = halfArenaHeight - ballRadius;
+						ballDirection.reflect(topTriangleNormal);
+						ballDirection.normalize();
+						ballGlowFlag = true;
+						ballInsideCoef = 2.2;
 
+					}
 
+				}//end if (!runningNetworkGame || (!youAreBlue && !ballTowardsBlue) || (youAreBlue && ballTowardsBlue) )
 
 				if (ball.position.x > 0) {
 					disc1.visible = true;
@@ -690,49 +769,61 @@
 
 			} //end if (bluePaddleMissed == false && redPaddleMissed == false && winnerCutScene == false)
 
-			if (bluePaddleMissed || redPaddleMissed) {
+			if ( !runningNetworkGame || (youAreBlue && ballTowardsBlue) || (!youAreBlue && !ballTowardsBlue) ) {
+			
+				if (!missedTimer.alarmSounding && (bluePaddleMissed || redPaddleMissed) )  {
 
-				disc1.visible = false;
-				disc2.visible = false;
-				disc3.visible = false;
-				disc4.visible = false;
+					disc1.visible = false;
+					disc2.visible = false;
+					disc3.visible = false;
+					disc4.visible = false;
 
-				missedTimer.run(frameTime);
+					missedTimer.run(frameTime);
 
-				if (missedTimer.alarmSounding) {
+					if (missedTimer.alarmSounding) {
 
-					if (blueWins || redWins) {
-						paddleWinSound.play({
-							volume: gameSoundVolume / 10.0
-						});
-						winCutSceneSound.play({
-							volume: gameSoundVolume / 10.0
-						});
-						camera.position.set(0, 100, 0);
-						bluePaddleMissed = false;
-						redPaddleMissed = false;
-						winnerCutScene = true;
+						if (blueWins || redWins) {
+							paddleWinSound.play({
+								volume: gameSoundVolume / 10.0
+							});
+							winCutSceneSound.play({
+								volume: gameSoundVolume / 10.0
+							});
+							camera.position.set(0, 100, 0);
+							winnerCutScene = true;
 
-						if (blueWins) {
-							document.getElementById("winner").style.color = "rgb(0,0,255)";
-							if (youAreBlue) winnerName = playerName;
-							else winnerName = opponentName;
+							if (blueWins) {
+								document.getElementById("winner").style.color = "rgb(0,0,255)";
+								if (youAreBlue) winnerName = playerName;
+								else winnerName = opponentName;
+							}
+							if (redWins) {
+								document.getElementById("winner").style.color = "rgb(255,0,0)";
+								if (youAreBlue) winnerName = opponentName;
+								else winnerName = playerName;
+							}
+
+							document.getElementById("winner").innerHTML = winnerName + " WINS!";
+			
+							if(runningNetworkGame){
+								sendGameState();
+								//sentGameState = true;
+							}
+						} else {
+							gameReset = true;
+							
+							if(runningNetworkGame){
+								sendGameState();
+								//sentGameState = true;
+							}
 						}
-						if (redWins) {
-							document.getElementById("winner").style.color = "rgb(255,0,0)";
-							if (youAreBlue) winnerName = opponentName;
-							else winnerName = playerName;
-						}
 
-						document.getElementById("winner").innerHTML = winnerName + " WINS!";
-					} else {
-						gameReset = true;
-					}
+					}//end if (missedTimer.alarmSounding)
 
-				}
-
-			} //end if(bluePaddleMissed || redPaddleMissed)
-
+				} //end if ( !missedTimer.alarmSounding && (bluePaddleMissed || redPaddleMissed) )
+			
+			} // end if ( !runningNetworkGame || (youAreBlue && ballTowardsBlue) || (!youAreBlue && !ballTowardsBlue) )
+			
 			//keep players inside arena
 			if (bluePaddle.position.x > rightWall)
 				bluePaddle.position.x = rightWall;
@@ -751,6 +842,9 @@
 				redPaddle.position.y = topWall;
 			if (redPaddle.position.y < bottomWall)
 				redPaddle.position.y = bottomWall;
+			
+			bluePaddle.position.z = bluePaddleFixedPosZ;
+			redPaddle.position.z = redPaddleFixedPosZ;
 
 			/*
 			if (insideFlag == false){
@@ -794,6 +888,15 @@
 				camera.lookAt(bluePaddle.position);
 			else if (winnerCutScene == false && !youAreBlue)
 				camera.lookAt(redPaddle.position);
+			
+			if(runningNetworkGame && !sentGameState){
+				networkTimer.run(frameTime);
+				if (networkTimer.alarmSounding){
+					updateNetwork();
+				}
+			}
+			
+			sentGameState = false;
 
 			renderer.render(scene, camera);
 
