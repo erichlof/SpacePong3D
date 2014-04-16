@@ -46,6 +46,7 @@ function initNetwork() {
 	
 	gameReset = true;
 	resetScores = true;
+	ballTowardsBlue = true;
 
 	document.getElementById('textInput').placeholder = "enter-public-chat-message";
 
@@ -178,12 +179,6 @@ function connectToLobby(playerName) {
 				if (message.type === "gameAccepted") {
 					if (message.receiver === playerName) {
 						document.getElementById('networkInfo').innerHTML = message.text;
-						myMessage = "Begin!";
-						document.getElementById('networkInfo').innerHTML = myMessage;
-						gameReset = true;
-						resetScores = true;
-						beginBannerTimer.reset();
-						showingBeginBanner = true;
 						matchAccepted = true;
 						runningAcceptTimer = false;
 						runningNetworkGame = true;
@@ -248,6 +243,9 @@ function connectToLobby(playerName) {
 			if (presMessage.action === 'timeout') {
 				myMessage = presMessage.uuid + " has timed out.";
 				chatLog(myMessage);
+				
+				tempId = document.getElementById(presMessage.uuid);
+				document.body.removeChild(tempId);
 			}
 			runningHereNow = true;
 			hereNowTimer.reset();
@@ -370,15 +368,7 @@ function opponentClickHandler(id) {
 				}
 			});
 			
-			myMessage = "Begin!";
-			document.getElementById('networkInfo').innerHTML = myMessage;
-			gameReset = true;
-			resetScores = true;
 			youAreBlue = false;
-			beginBannerTimer.reset();
-			showingBeginBanner = true;
-			networkTimer.reset();
-			
 			matchAccepted = true;
 			opponentName = id;
 			runningNetworkGame = true;
@@ -410,35 +400,120 @@ function connectToOpponent(opponent) {
 						
 						if(i === 0) {
 							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
-							if (youAreBlue) redPaddle.position.x = parseInt(slicedMessage, 10);
-							else bluePaddle.position.x = parseInt(slicedMessage, 10);
+							if (youAreBlue) redPaddle.position.x = parseFloat(slicedMessage, 10);
+							else bluePaddle.position.x = parseFloat(slicedMessage, 10);
 						}	
 						if(i === 1){
 							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
-							if (youAreBlue) redPaddle.position.y = parseInt(slicedMessage, 10);
-							else bluePaddle.position.y = parseInt(slicedMessage, 10);
+							if (youAreBlue) redPaddle.position.y = parseFloat(slicedMessage, 10);
+							else bluePaddle.position.y = parseFloat(slicedMessage, 10);
 						}
 						if(i === 2){
 							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
-							if (!youAreBlue) ball.position.x = parseInt(slicedMessage, 10);
+							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+								ball.position.x = parseFloat(slicedMessage, 10);
+							
 						}
 						if(i === 3){
 							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
-							if (!youAreBlue) ball.position.y = parseInt(slicedMessage, 10);
+							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+								ball.position.y = parseFloat(slicedMessage, 10);
+							
 						}
 						if(i === 4){
 							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
-							if (!youAreBlue) ball.position.z = parseInt(slicedMessage, 10);
+							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+								ball.position.z = parseFloat(slicedMessage, 10);
+							
 						}
-					}
+						if(i === 5){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+								ballDirection.x = parseFloat(slicedMessage, 10);
+								
+						}
+						if(i === 6){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+								ballDirection.y = parseFloat(slicedMessage, 10);
+								
+						}
+						if(i === 7){
+							slicedMessage = message.slice(1 + stringSlicePoints[i]);
+							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) ) {
+								ballDirection.z = parseFloat(slicedMessage, 10);
+								if(ballDirection.z < 0) ballTowardsBlue = false;
+								if(ballDirection.z > 0) ballTowardsBlue = true;
+                                                        }
+						}
+					}//end for (i = 0; i < commaCounter; i++) {
 
 					break;
 				case "C":
 					chatLog( message.slice(2) );
 					break;
 				case "G":
-					//gameStateMessage = message.slice(2);
-					//gameState = gameStateMessage;
+					for (i = 0, stringPos = 0; stringPos < message.length; stringPos++) {
+						if(message.charAt(stringPos) == ","){
+							stringSlicePoints[i] = stringPos;
+							i++;
+							commaCounter = i;
+						}
+					}
+					for (i = 0; i < commaCounter; i++) {
+						
+						if(i === 0){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							ballTowardsBlue = !!JSON.parse(String(slicedMessage));
+						}
+						if(i === 1) {
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							bluePaddleMissed = !!JSON.parse(String(slicedMessage));
+						}	
+						if(i === 2) {
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							redPaddleMissed = !!JSON.parse(String(slicedMessage));
+						}	
+						if(i === 3){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							blueWins = !!JSON.parse(String(slicedMessage));
+							if (blueWins) {
+								document.getElementById("winner").style.color = "rgb(0,0,255)";
+								if (youAreBlue) winnerName = playerName;
+								else winnerName = opponentName;
+								//document.getElementById("winner").innerHTML = winnerName + " WINS!";
+							}
+						}
+						if(i === 4){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							redWins = !!JSON.parse(String(slicedMessage));
+							if (redWins) {
+								document.getElementById("winner").style.color = "rgb(255,0,0)";
+								if (youAreBlue) winnerName = opponentName;
+								else winnerName = playerName;
+								//document.getElementById("winner").innerHTML = winnerName + " WINS!";
+							}
+						}
+						if(i === 5){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							winnerCutScene = !!JSON.parse(String(slicedMessage));
+						}
+						if(i === 6){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							blueScore = parseInt(slicedMessage, 10);
+							document.getElementById("bluescore").innerHTML = blueScore;
+						}
+						if(i === 7){
+							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
+							redScore = parseInt(slicedMessage, 10);
+							document.getElementById("redscore").innerHTML = redScore;
+						}
+						if(i === 8){
+							slicedMessage = message.slice(1 + stringSlicePoints[i]);
+							gameReset = !!JSON.parse(String(slicedMessage));
+						}
+						
+					}//end for (i = 0; i < commaCounter; i++) {
 					break;
 				default:
 					chatLog( message.slice(2) );
@@ -464,6 +539,7 @@ function connectToOpponent(opponent) {
 			});
 
 			initNetwork();
+			runningNetworkGame = false;
 			runningHereNow = true;
 			hereNowTimer.reset();
 		}
@@ -477,11 +553,23 @@ function connectToOpponent(opponent) {
 	});
 
 	document.getElementById('textInput').placeholder = "enter-private-message";
-
+	myMessage = "Begin!";
+	document.getElementById('networkInfo').innerHTML = myMessage;
+	gameReset = true;
+	resetScores = true;
+	blueScore = 0;
+	redScore = 0;
+	ballTowardsBlue = true;
+	beginBannerTimer.reset();
+	showingBeginBanner = true;
+	networkTimer.reset();		
+	matchAccepted = true;
+	runningNetworkGame = true;
 	chatting = false;
 	playingAndChatting = true;
 
 } //end function connectToOpponent(opponent)
+
 
 function checkIfMatchAccepted() {
 
@@ -498,6 +586,7 @@ function checkIfMatchAccepted() {
 				}
 			});
 			initNetwork();
+			runningNetworkGame = false;
 			runningHereNow = true;
 			hereNowTimer.reset();
 		}
@@ -514,6 +603,7 @@ function checkIfMatchAccepted() {
 				}
 			});
 			initNetwork();
+			runningNetworkGame = false;
 			runningHereNow = true;
 			hereNowTimer.reset();
 		}
@@ -523,12 +613,32 @@ function checkIfMatchAccepted() {
 
 
 function updateNetwork() {
-	if(youAreBlue)
+	
+
+	//if you are blue paddle and ball going away from you, only send your paddle pos to red player
+	///if(youAreBlue && !ballTowardsBlue)
+	///	dataMessage = "D," + bluePaddle.position.x + "," + bluePaddle.position.y;
+	//if you are blue paddle and ball coming towards you, send ball position and direction to red player also
+	///if(youAreBlue && ballTowardsBlue) {
+	if(youAreBlue){
 		dataMessage = "D," + bluePaddle.position.x + "," + bluePaddle.position.y + "," + 
-				ball.position.x + "," + ball.position.y + "," + ball.position.z;
-	if(!youAreBlue)
+			ball.position.x + "," + ball.position.y + "," + ball.position.z + "," +
+				ballDirection.x + "," + ballDirection.y + "," + ballDirection.z;
+		
+	}
+	
+	//if you are red paddle and ball going away from you, only send your paddle pos to blue player
+	///if(!youAreBlue && ballTowardsBlue)
+	///	dataMessage = "D," + redPaddle.position.x + "," + redPaddle.position.y;
+	//if you are red paddle and ball coming towards you, send ball position and direction to blue player also
+	///if(!youAreBlue && !ballTowardsBlue) {
+	if(!youAreBlue){
 		dataMessage = "D," + redPaddle.position.x + "," + redPaddle.position.y + "," + 
-				ball.position.x + "," + ball.position.y + "," + ball.position.z;
+			ball.position.x + "," + ball.position.y + "," + ball.position.z + "," +
+				ballDirection.x + "," + ballDirection.y + "," + ballDirection.z;
+		
+	}
+	
 	pubnub.publish({
 		user: opponentName,
 		message: dataMessage
@@ -537,3 +647,16 @@ function updateNetwork() {
 	networkTimer.reset();
 
 }//end function updateNetwork()
+
+
+function sendGameState() {
+	
+	gameStateMessage = "G," + ballTowardsBlue + "," + bluePaddleMissed + "," + redPaddleMissed + "," + 
+		blueWins + "," + redWins + "," + winnerCutScene + "," + blueScore + "," + redScore + "," + gameReset;		
+	
+	pubnub.publish({
+		user: opponentName,
+		message: gameStateMessage
+	});
+	
+}
