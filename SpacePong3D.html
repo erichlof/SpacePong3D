@@ -141,9 +141,9 @@
 		var paddleDepth = 4;
 		var halfPaddleWidth = paddleWidth / 2;
 		var halfPaddleHeight = paddleHeight / 2;
-		var arenaWidth = 100; //100
-		var arenaHeight = 60; //60
-		var arenaDepth = 200; //200
+		var arenaWidth = 100;
+		var arenaHeight = 60;
+		var arenaDepth = 200;
 		var halfArenaWidth = arenaWidth / 2;
 		var halfArenaHeight = arenaHeight / 2;
 		var halfArenaDepth = arenaDepth / 2;
@@ -168,7 +168,7 @@
 		var youAreBlue = true;
 		var ballTowardsBlue = true;
 		var sentGameState = false;
-	    
+		
 		var skyCubeTexture = THREEx.createTextureCube([
 			'images/skybox/moondust-xpos.png', 'images/skybox/moondust-xneg.png',
 			'images/skybox/moondust-ypos.png', 'images/skybox/moondust-yneg.png',
@@ -335,7 +335,6 @@
 		disc4.position.set(0, -halfArenaHeight, 0);
 		disc4.rotation.set(Math.PI / -2, 0, 0);
 
-		var gravityClicked = false;
 		document.getElementById("gravity").onclick = gravityClickHandler;
 
 		var difficultyLevel = 1;
@@ -376,7 +375,7 @@
 
 		function animate() {
 			//debug output
-			//document.getElementById('networkInfo').innerHTML = "towardsBlue: " + ballTowardsBlue;
+			//document.getElementById('networkInfo').innerHTML = "ballSpeed: " + ballSpeed;
 
 			if (!allSoundsLoaded) {
 				if (bounceSound.loaded && paddleHitSound.loaded && paddleMissSound.loaded &&
@@ -528,9 +527,6 @@
 				document.getElementById("redscore").innerHTML = redScore;
 
 				document.getElementById("winner").innerHTML = "";
-			
-				//if(runningNetworkGame)
-				//	updateNetwork();
 
 				gameReset = false;
 
@@ -594,14 +590,9 @@
 				ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
 			
 			}
-			else if (runningNetworkGame) {
+			else ball.translateOnAxis(ballDirection, ballSpeed * frameTime);	
 			
-				///if ( (youAreBlue && ballTowardsBlue) || (!youAreBlue && !ballTowardsBlue) )
-					ball.translateOnAxis(ballDirection, ballSpeed * frameTime);
-				
-			}
 			
-
 			if (bluePaddleMissed == false && redPaddleMissed == false && winnerCutScene == false) {
 
 				if(!runningNetworkGame)
@@ -625,14 +616,16 @@
 								ballDirection.y += redPaddleDesiredDirection.y;
 								ballDirection.z += (Math.abs(redPaddleDesiredDirection.x) + Math.abs(redPaddleDesiredDirection.y));
 								ballDirection.normalize();
-								updateNetwork();
-								//slightly increase ball speed every volley
-								ballSpeed *= 1.03;
+								if (runningNetworkGame) {
+									ballSpeed *= 1.05;
+									updateNetwork();
+								}
+								else ballSpeed *= 1.03;
+								
 								ballGlowFlag = true;
 								ballInsideCoef = 2.2;
 
 								ballTowardsBlue = true;
-								
 							} else {
 								paddleMissSound.play({
 									volume: gameSoundVolume * 5,
@@ -641,8 +634,6 @@
 								handleMiss(redPaddle);
 								if(runningNetworkGame){
 									sendGameState();
-									//sentGameState = true;
-									//ballTowardsBlue = true;
 								}
 							}
 						}
@@ -665,14 +656,16 @@
 								ballDirection.y -= deltaYDifference;
 								ballDirection.z -= (Math.abs(deltaXDifference) + Math.abs(deltaYDifference));
 								ballDirection.normalize();
-								updateNetwork();
-								//slightly increase ball speed every volley
-								ballSpeed *= 1.03;
+								if (runningNetworkGame) {
+									ballSpeed *= 1.05;
+									updateNetwork();
+								}
+								else ballSpeed *= 1.03;
+			
 								ballGlowFlag = true;
 								ballInsideCoef = 2.2;
 
 								ballTowardsBlue = false;
-								
 							} else {
 								paddleMissSound.play({
 									volume: gameSoundVolume * 5,
@@ -681,8 +674,6 @@
 								handleMiss(bluePaddle);
 								if(runningNetworkGame){
 									sendGameState();
-									//sentGameState = true;
-									//ballTowardsBlue = false;
 								}
 							}
 						}
@@ -807,14 +798,12 @@
 			
 							if(runningNetworkGame){
 								sendGameState();
-								//sentGameState = true;
 							}
 						} else {
 							gameReset = true;
 							
 							if(runningNetworkGame){
 								sendGameState();
-								//sentGameState = true;
 							}
 						}
 
@@ -997,25 +986,25 @@
 		}
 
 		function gravityClickHandler() {
+			
+			if(!runningNetworkGame)
+				gravityOn = !gravityOn;
 
-			gravityClicked = !gravityClicked;
-
-			if (gravityClicked) {
+			if (gravityOn) {
 				document.getElementById("gravity").innerHTML = "Gravity ON";
 				document.getElementById("gravity").style.color = "rgb(180,180,180)";
-				gravityOn = true;
 			}
-			if (!gravityClicked) {
+			if (!gravityOn) {
 				document.getElementById("gravity").innerHTML = "Gravity OFF";
 				document.getElementById("gravity").style.color = "rgb(100,100,100)";
-				gravityOn = false;
 			}
 
 		}
 
 		function difficultyClickHandler() {
-
-			difficultyLevel += 1;
+			
+			if(!runningNetworkGame)
+				difficultyLevel += 1;
 			if (difficultyLevel > 3)
 				difficultyLevel = 0;
 
