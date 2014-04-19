@@ -408,44 +408,38 @@ function connectToOpponent(opponent) {
 							if (youAreBlue) redPaddle.position.y = parseFloat(slicedMessage, 10);
 							else bluePaddle.position.y = parseFloat(slicedMessage, 10);
 						}
-						if(i === 2){
-							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
-							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+						if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) ) {
+							
+							if(i === 2){
+								slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
 								ball.position.x = parseFloat(slicedMessage, 10);
-							
-						}
-						if(i === 3){
-							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
-							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+							}
+							if(i === 3){
+								slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
 								ball.position.y = parseFloat(slicedMessage, 10);
-							
-						}
-						if(i === 4){
-							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
-							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+
+							}
+							if(i === 4){
+								slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
 								ball.position.z = parseFloat(slicedMessage, 10);
-							
-						}
-						if(i === 5){
-							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
-							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+							}
+							if(i === 5){
+								slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
 								ballDirection.x = parseFloat(slicedMessage, 10);
-								
-						}
-						if(i === 6){
-							slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
-							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+							}
+							if(i === 6){
+								slicedMessage = message.slice(1 + stringSlicePoints[i], stringSlicePoints[i+1]);
 								ballDirection.y = parseFloat(slicedMessage, 10);
-								
-						}
-						if(i === 7){
-							slicedMessage = message.slice(1 + stringSlicePoints[i]);
-							if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) ) {
+							}
+							if(i === 7){
+								slicedMessage = message.slice(1 + stringSlicePoints[i]);
 								ballDirection.z = parseFloat(slicedMessage, 10);
 								if(ballDirection.z < 0) ballTowardsBlue = false;
 								if(ballDirection.z > 0) ballTowardsBlue = true;
-                                                        }
-						}
+							}
+							
+						}// end if( (youAreBlue && !ballTowardsBlue) || (!youAreBlue && ballTowardsBlue) )
+						
 					}//end for (i = 0; i < commaCounter; i++) {
 
 					break;
