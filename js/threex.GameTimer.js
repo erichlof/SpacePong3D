@@ -1,3 +1,6 @@
+/** @namespace */
+var THREEx = THREEx || {};
+
 THREEx.GameTimer = function(secondsUntilAlarm) {
 
 
