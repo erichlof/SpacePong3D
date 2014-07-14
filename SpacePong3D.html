@@ -2,7 +2,7 @@
 <html>
 
 <head>
-	<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
 	<title>SpacePong3D</title>
 
@@ -76,7 +76,7 @@
 		Multiplayer: Enter your name and press Join Lobby
 	</div>
 
-	<script src="js/three.min.js"></script>
+	<script src="http://threejs.org/build/three.min.js"></script>
 	<script src="js/threex.texturecube.js"></script>
 	<script src="js/threex.skymap.js"></script>
 	<script src="js/threex.keyboardstate.js"></script>
@@ -124,7 +124,7 @@
 		var gameReset = false;
 		var frameTime = 0;
 		var firstTouchMove = true;
-		var joystickDampening = 2;
+		var joystickDampening = 3;//2
 		var deltaXDifference = 0;
 		var deltaYDifference = 0;
 		var oldDeltaX = 0;
@@ -538,46 +538,44 @@
 					mouseControl = true;
 				}
 
-				if (joystick) {
 
-					newDeltaX = joystick.deltaX();
-					newDeltaY = joystick.deltaY();
+				newDeltaX = joystick.deltaX();
+				newDeltaY = joystick.deltaY();
 
-					deltaXDifference = newDeltaX - oldDeltaX;
-					deltaYDifference = newDeltaY - oldDeltaY;
+				deltaXDifference = newDeltaX - oldDeltaX;
+				deltaYDifference = newDeltaY - oldDeltaY;
 
 
-					if (mouseControl) joystick._pressed = true;
+				if (mouseControl) joystick._pressed = true;
 
-					if (joystick._pressed) {
+				if (joystick._pressed) {
 
-						if (firstTouchMove == false) {
-							if (youAreBlue) {
-								bluePaddle.position.x += (deltaXDifference / joystickDampening);
-								bluePaddle.position.y -= (deltaYDifference / joystickDampening);
-							}
-							if (!youAreBlue) {
-								redPaddle.position.x -= (deltaXDifference / joystickDampening);
-								redPaddle.position.y -= (deltaYDifference / joystickDampening);
-							}
-						} else if (firstTouchMove == true) {
-							//did the player swipe yet?
-							if (Math.abs(deltaXDifference) > 0 || Math.abs(deltaYDifference) > 0) {
-								//initial touchmove starts rough, so make sure it is smooth first
-								if (Math.abs(deltaXDifference) < 10 && Math.abs(deltaYDifference) < 10)
-									firstTouchMove = false; //only a small first movement will trigger this
-							}
+					if (firstTouchMove == false) {
+						if (youAreBlue) {
+							bluePaddle.position.x += (deltaXDifference / joystickDampening);
+							bluePaddle.position.y -= (deltaYDifference / joystickDampening);
 						}
-
-					} else { //joystick not pressed
-						//reset firstTouchMove
-						firstTouchMove = true;
+						if (!youAreBlue) {
+							redPaddle.position.x -= (deltaXDifference / joystickDampening);
+							redPaddle.position.y -= (deltaYDifference / joystickDampening);
+						}
+					} else if (firstTouchMove == true) {
+						//did the player swipe yet?
+						if (Math.abs(deltaXDifference) > 0 || Math.abs(deltaYDifference) > 0) {
+							//initial touchmove starts rough, so make sure it is smooth first
+							if (Math.abs(deltaXDifference) < 10 && Math.abs(deltaYDifference) < 10)
+								firstTouchMove = false; //only a small first movement will trigger this
+						}
 					}
 
-					oldDeltaX = newDeltaX;
-					oldDeltaY = newDeltaY;
+				} else { //joystick not pressed
+					//reset firstTouchMove
+					firstTouchMove = true;
+				}
 
-				} //end if(joystick)
+				oldDeltaX = newDeltaX;
+				oldDeltaY = newDeltaY;
+
 
 			} //end if(winnerCutScene == false)
 
