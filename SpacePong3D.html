@@ -222,10 +222,13 @@
 
 		 //blue paddle
 		var boxGeometry = new THREE.BoxGeometry(paddleWidth, paddleHeight, paddleDepth);
-		var boxMaterial = new THREE.MeshBasicMaterial();
+		var boxMaterial = new THREE.MeshBasicMaterial({
+			transparent: true,
+			opacity: 0,
+			color: 'rgb(0,0,0)'
+		});
 		var bluePaddle = new THREE.Mesh(boxGeometry, boxMaterial);
 		scene.add(bluePaddle);
-		bluePaddle.visible = false;
 
 		var blueGlow = new THREEx.GeometricGlowMesh(bluePaddle);
 		blueGlow.outsideMesh.scale.set(1.08, 1.08, 1);
@@ -245,10 +248,13 @@
 
 		 //red paddle
 		var boxGeometry = new THREE.BoxGeometry(paddleWidth, paddleHeight, paddleDepth);
-		var boxMaterial = new THREE.MeshBasicMaterial();
+		var boxMaterial = new THREE.MeshBasicMaterial({
+			transparent: true,
+			opacity: 0,
+			color: 'rgb(0,0,0)'
+		});
 		var redPaddle = new THREE.Mesh(boxGeometry, boxMaterial);
 		scene.add(redPaddle);
-		redPaddle.visible = false;
 
 		var redGlow = new THREEx.GeometricGlowMesh(redPaddle);
 		redGlow.outsideMesh.scale.set(1.08, 1.08, 1);
@@ -267,10 +273,13 @@
 
 		 //ball
 		var sphereGeometry = new THREE.SphereGeometry(ballRadius, 10, 10);
-		var sphereMaterial = new THREE.MeshBasicMaterial();
+		var sphereMaterial = new THREE.MeshBasicMaterial({
+			transparent: true,
+			opacity: 0,
+			color: 'rgb(0,0,0)'
+		});
 		var ball = new THREE.Mesh(sphereGeometry, sphereMaterial);
 		scene.add(ball);
-		ball.visible = false;
 
 		var ballGlow = new THREEx.GeometricGlowMesh(ball);
 		ballGlow.outsideMesh.scale.set(1.2, 1.2, 1.2);
