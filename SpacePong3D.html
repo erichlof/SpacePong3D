@@ -55,7 +55,7 @@
 	<div id="winner" style="position:fixed; left:40%; top:20%; font-family:arial; font-type:bold; color:black;">
 
 	</div>
-  
+  
 	<div id="networkInfo" style="position:fixed; left:40%; top:20%; font-size:18px; font-family:arial; font-type:bold; color:blue;">
 
 	</div>
@@ -169,6 +169,57 @@
 		var youAreBlue = true;
 		var ballTowardsBlue = true;
 		var sentGameState = false;
+
+		// stars
+		var i, r = 2500, vertex, s, starsGeometry = [ new THREE.Geometry(), new THREE.Geometry() ];
+
+		for ( i = 0; i < 250; i ++ ) {
+
+			vertex = new THREE.Vector3();
+			vertex.x = Math.random() * 2 - 1;
+			vertex.y = Math.random() * 2 - 1;
+			vertex.z = Math.random() * 2 - 1;
+			vertex.multiplyScalar( r );
+			//stars must appear above ground
+			if(vertex.y < 0)
+				continue;
+
+			else starsGeometry[ 0 ].vertices.push( vertex );
+
+		}
+
+		for ( i = 0; i < 1500; i ++ ) {
+
+			vertex = new THREE.Vector3();
+			vertex.x = Math.random() * 2 - 1;
+			vertex.y = Math.random() * 2 - 1;
+			vertex.z = Math.random() * 2 - 1;
+			vertex.multiplyScalar( r );
+			//stars must appear above ground
+			if(vertex.y < 0)
+				continue;
+
+			else starsGeometry[ 1 ].vertices.push( vertex );
+
+		}
+
+		var stars;
+		var starsMaterials = [
+			new THREE.PointCloudMaterial( { color: 0xdddd00, size: 1, sizeAttenuation: false } ),
+			new THREE.PointCloudMaterial( { color: 0xffff00, size: 1, sizeAttenuation: false } ),
+			new THREE.PointCloudMaterial( { color: 0x00dddd, size: 1, sizeAttenuation: false } ),
+			new THREE.PointCloudMaterial( { color: 0x44dddd, size: 1, sizeAttenuation: false } ),
+			new THREE.PointCloudMaterial( { color: 0xeeeeee, size: 1, sizeAttenuation: false } ),
+			new THREE.PointCloudMaterial( { color: 0xaa33ee, size: 1, sizeAttenuation: false } )
+		];
+
+		for ( i = 10; i < 30; i ++ ) {
+
+			stars = new THREE.PointCloud( starsGeometry[ i % 2 ], starsMaterials[ i % 6 ] );
+			stars.rotation.y = Math.random() * 6;
+			scene.add( stars );
+
+		}
 		
 		var skyCubeTexture = THREEx.createTextureCube([
 			'images/skybox/moondust-xpos.png', 'images/skybox/moondust-xneg.png',
@@ -355,7 +406,7 @@
 		var gameSoundVolume = 0.0;
 		document.getElementById("volume").onclick = volumeClickHandler;
 
-		var gameSounds  = new WebAudiox.GameSounds();
+		var gameSounds  = new WebAudiox.GameSounds();
 		gameSounds.lineOut.volume = 0.0;
 		gameSounds.listenerFollow(camera);
 
@@ -770,7 +821,7 @@
 
 			if ( !runningNetworkGame || (youAreBlue && ballTowardsBlue) || (!youAreBlue && !ballTowardsBlue) ) {
 			
-				if (!missedTimer.alarmSounding && (bluePaddleMissed || redPaddleMissed) )  {
+				if (!missedTimer.alarmSounding && (bluePaddleMissed || redPaddleMissed) )  {
 
 					disc1.visible = false;
 					disc2.visible = false;
