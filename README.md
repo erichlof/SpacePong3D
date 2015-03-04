@@ -7,13 +7,12 @@ A simple 3D game that shows how to use three.js, threex helpers, and game logic.
 \ [[view main source](https://github.com/erichlof/SpacePong3D/blob/gh-pages/SpacePong3D.html)\]
 
 <h5>Be sure to check out my other 3D games!</h5>
-* [3dLightCycles](https://github.com/erichlof/3dLightCycles)
 * [AsteroidPatrol3D](https://github.com/erichlof/AsteroidPatrol3D)
-
+* [3dLightCycles](https://github.com/erichlof/3dLightCycles)
 
 <h4>Quick instructions for SpacePong3D:</h4>
 <h6>Desktop:</h6> 
-Press 'M' for Mouse Control
+Press 'M' for Mouse Control <br>
 Mouse controls Paddle <br>
 
 <h6>Mobile:</h6> 
